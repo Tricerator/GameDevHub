@@ -10,6 +10,7 @@ from Player import Player
 from Wall import Wall
 from Companion import Companion
 from enemy import Enemy
+import enemy as en
 from MapGeneration import generateMap
 
 SCREEN_TITLE = "Gummy terror"
@@ -69,7 +70,8 @@ class GameWindow(arcade.Window):
         self.gui_camera = None
 
         self.graphicsTextures = {}
-        self.loadAllTextures()
+        #self.loadAllTextures()
+        self.enemy_texture_list = en.loadTextures()
 
 
     def setup(self):
@@ -115,6 +117,8 @@ class GameWindow(arcade.Window):
         
         self.textures_sheet = arcade.load_spritesheet(f"images/player.png", 128, 64, 12, 60, 0)
         self.gui_camera = arcade.Camera(self.width, self.height)
+
+
 
 
     def createBackground(self):
@@ -188,11 +192,10 @@ class GameWindow(arcade.Window):
         self.scene.add_sprite("Building tools", self.buildingSquare_sprite)
 
     def createEnemies(self, ENEMY_COUNT_INITIAL):
-        image_list = ["images/ememy.png"]
+
         for i in range(ENEMY_COUNT_INITIAL):
-            image_no = random.randint(0, len(image_list) - 1)
-            size = random.randint(1,5)
-            enemy_sprite = Enemy(image_list[image_no], (size + 5) / 10)
+            colour_scheme = random.choice(self.enemy_texture_list)
+            enemy_sprite = Enemy(colour_scheme)
             enemy_sprite.timer_rand = 0
             enemy_sprite.timer_smart = 0
             enemy_sprite.position = [random.randint(0, SCREEN_WIDTH), random.randint(0, SCREEN_HEIGHT)]
@@ -204,7 +207,6 @@ class GameWindow(arcade.Window):
                 enemy_sprite.change_y = random.randint(1, 3)
             else:
                 enemy_sprite.change_y -= random.randint(1, 3)
-            enemy_sprite.size = size
             self.scene.add_sprite("Enemies", enemy_sprite)
 
             
@@ -315,7 +317,7 @@ class GameWindow(arcade.Window):
                     enemy.kill()
                     if len(self.scene["Enemies"]) <= 0:
                         snd = arcade.load_sound(":resources:sounds/upgrade1.wav")
-
+    """
     def loadAllTextures(self):
 
         for i in ["Green", "Blue", "Red", "Yellow"]:
@@ -335,6 +337,7 @@ class GameWindow(arcade.Window):
         self.graphicsTextures["sword"] = sword
         self.graphicsTextures["armor"] = armor
         self.graphicsTextures["inquisitor"] = inquisitor
+    """
 
     def on_update(self, delta_time):
         """ Movement and game logic """
@@ -355,20 +358,19 @@ class GameWindow(arcade.Window):
                             self.player_sprite.center_x + SCREEN_WIDTH / 2,
                             self.player_sprite.center_y - SCREEN_HEIGHT / 2,
                             self.player_sprite.center_y + SCREEN_HEIGHT / 2)
-        enemy_speedy = 0.5 # + (self.player_sprite.difficulty / 12)
+        #enemy_speedy = 0.5 # + (self.player_sprite.difficulty / 12)
         for enemy in self.scene["Enemies"]:
             y_pos = enemy.center_y
             x_pos = enemy.center_x
             if self.player_sprite.center_y > y_pos:
-                dir_y = 1
+                enemy.dir_y = 1
             if self.player_sprite.center_x > x_pos:
-                dir_x = 1
+                enemy.dir_x = 1
             if self.player_sprite.center_y <= y_pos:
-                dir_y = -1
+                enemy.dir_y = -1
             if self.player_sprite.center_x <= x_pos:
-                dir_x = -1
-            enemy.change_x = dir_x * (enemy_speedy ) *(3/enemy.size)
-            enemy.change_y = dir_y * (enemy_speedy )*(3/enemy.size)
+                enemy.dir_x = -1
+
             if len(arcade.check_for_collision_with_list(enemy, self.scene["Walls"]) )> 0:
                 enemy.change_x *= -1
                 enemy.change_y *= -1
@@ -395,14 +397,14 @@ class GameWindow(arcade.Window):
             elif enemy.boundary_right is not None and enemy.right > enemy.boundary_right:
                 enemy.change_x *= -1
             """
-            enemy.center_x += enemy.change_x
-            enemy.center_y += enemy.change_y
+            #enemy.center_x += enemy.change_x
+            #enemy.center_y += enemy.change_y
             hitListEnemy = arcade.check_for_collision_with_list(self.player_sprite, self.scene["Enemies"])
             if len(hitListEnemy) > 0:
                 for enemy in hitListEnemy:
                     if self.player_sprite.health <= 0:
                        self.player_sprite.kill()
-                    self.player_sprite.health -= enemy.size
+                    self.player_sprite.health -= enemy.scale
                     if enemy.center_x < self.player_sprite.center_x:
                         enemy.center_x -= 30
                     elif enemy.center_x >= self.player_sprite.center_x:
@@ -453,7 +455,7 @@ class GameWindow(arcade.Window):
                         c.life -= 5
                 creeper.exploded = True
 
-        for e in self.scene["Effects"]:
+        for e in self.scene["Enemies"]:
             e.update_animation()
 
         # kod honza companion
