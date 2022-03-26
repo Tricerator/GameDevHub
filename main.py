@@ -60,6 +60,14 @@ class GameWindow(arcade.Window):
         self.down_pressed = False
 
         self.music = None
+        
+          # Don't show the mouse cursor
+        self.set_mouse_visible(False)
+        self.gui_camera = None
+
+        self.graphicsTextures = {}
+        self.loadAllTextures()
+
 
     def setup(self):
         """ Set up everything with the game """
@@ -71,9 +79,14 @@ class GameWindow(arcade.Window):
         #self.music = arcade.load_sound("sounds/dark.webm")
         #self.music.play()
 
+
+        playerIn = self.graphicsTextures["inquisitor"][0]
         self.player_sprite = Player("images/player1.png", PLAYER_SCALING)
+        self.player_sprite.texture = playerIn
+        self.player_sprite.viewP = [SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2]
         self.player_sprite.position = [SCREEN_WIDTH//2, SCREEN_HEIGHT//2]
         self.scene.add_sprite("Player", self.player_sprite)
+
 
         self.scene.add_sprite_list("Enemies")
         self.scene.add_sprite_list("Companions")
@@ -101,6 +114,9 @@ class GameWindow(arcade.Window):
         self.physics_engine = arcade.PhysicsEngineSimple(
             self.player_sprite, self.scene.get_sprite_list("Walls")
         )
+        
+         self.gui_camera = arcade.Camera(self.width, self.height)
+
 
     def createBackground(self):
         imagePath = "images/tiles/cobble/"
@@ -180,14 +196,19 @@ class GameWindow(arcade.Window):
             self.scene.add_sprite("Enemies", enemy_sprite)
 
     def on_key_press(self, key, modifiers):
-        if key == arcade.key.W or key == arcade.key.UP:
+          if key == arcade.key.W or key == arcade.key.UP:
             self.up_pressed = True
+            self.player_sprite.move("U")
         elif key == arcade.key.S or key == arcade.key.DOWN:
             self.down_pressed = True
+            self.player_sprite.move("D")
         elif key == arcade.key.A or key == arcade.key.LEFT:
             self.left_pressed = True
+            self.player_sprite.move("L")
         elif key == arcade.key.D or key == arcade.key.RIGHT:
             self.right_pressed = True
+            self.player_sprite.move("R")
+
 
     def on_key_release(self, key, modifiers):
 
@@ -204,6 +225,72 @@ class GameWindow(arcade.Window):
             self.player_sprite.change_x + 2
             self.player_sprite.change_y + 2
             self.player_sprite.stamina -= 1
+        
+
+    def attack(self):
+
+        addVector = [0, 0]
+        if self.player_sprite.viewP[0] < 0:
+            addVector[0] = -2
+        else:
+            addVector[0] = 2
+        if self.player_sprite.viewP[1] < 0:
+            addVector[1] = -2
+        else:
+            addVector[1] = 2
+
+        for enemy in self.scene["Enemies"]:
+            hit = False
+            if self.player_sprite.viewP[0] <= 0:
+                if enemy.center_x - (self.player_sprite.center_x + addVector[0]) < 0 and \
+                        abs(enemy.center_y - self.player_sprite.center_y) < 10:
+                    hit = True
+            elif self.player_sprite.viewP[0] > 0:
+                if enemy.center_x - (self.player_sprite.center_x + addVector[0]) >= 0 and \
+                        abs(enemy.center_y - self.player_sprite.center_y) < 10:
+                    hit = True
+            elif self.player_sprite.viewP[1] <= 0:
+                if enemy.center_y - (self.player_sprite.center_y + addVector[1]) >= 0 and \
+                        abs(enemy.center_x - self.player_sprite.center_x) < 10:
+                    hit = True
+            elif self.player_sprite.viewP[1] > 0:
+                if enemy.center_y - (self.player_sprite.center_y + addVector[1]) < 0 and \
+                        abs(enemy.center_x - self.player_sprite.center_x) < 10:
+                    hit = True
+            if hit:
+                s = arcade.load_sound(":resources:sounds/hurt2.wav")
+                s.play()
+                enemy.life -= 1
+                if enemy.life <= 0:
+                    self.player_sprite.coins += 10 * enemy.size
+                    self.scene["Enemies"].remove(enemy)
+                    enemy.kill()
+                    if len(self.scene["Enemies"]) <= 0:
+                        snd = arcade.load_sound(":resources:sounds/upgrade1.wav")
+
+    def loadAllTextures(self):
+
+        for i in ["Green", "Blue", "Red", "Yellow"]:
+          bears = arcade.load_spritesheet(f"images/bear{i}.png",
+                                        56, 88, 10, 30, 1)
+          self.graphicsTextures[f"bears{i}"] = bears
+
+        sword = arcade.load_spritesheet(f"images/sword.png",
+                                        128, 64, 12, 60, 0)
+
+        armor = arcade.load_spritesheet(f"images/armor.png",
+                                        128, 64, 12, 60, 0)
+
+        inquisitor = arcade.load_spritesheet(f"images/inquisitor.png",
+                                        128, 64, 12, 60, 0)
+
+        self.graphicsTextures["sword"] = sword
+        self.graphicsTextures["armor"] = armor
+        self.graphicsTextures["inquisitor"] = inquisitor
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            self.attack()
 
     def on_update(self, delta_time):
         """ Movement and game logic """
@@ -293,6 +380,23 @@ class GameWindow(arcade.Window):
         self.clear()
 
         self.scene.draw()
+        
+        self.gui_camera.use()
+
+        # Draw our score on the screen, scrolling it with the viewport
+        nums = len(self.scene["Enemies"])
+        score_text = f"Coins: {self.player_sprite.coins}\n" + \
+                     f"Enemies: {nums}"
+
+        arcade.draw_rectangle_filled(0, 600, 600, 80, arcade.csscolor.BEIGE)
+        arcade.draw_text(
+            score_text,
+            10,
+            575,
+            arcade.csscolor.BLACK,
+            18,
+        )
+
 
 
 def main():
