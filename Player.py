@@ -64,7 +64,7 @@ class Player(arcade.Sprite):
         for png in range(3):
             self.sheet = arcade.load_spritesheet(f"images/{pngtextury[png]}.png", 128, 64, 12, 60, 0)
             self.sheet1 = arcade.load_spritesheet(f"images/{pngtextury[png]}1.png", 128, 64, 12, 60, 0)
-          mi, ma = 0, 1
+            mi, ma = 0, 1
             for j in range(3):
                 for i in range(indexes[mi], indexes[ma]):
                     self.all_textures[obj].append([self.sheet[i]])

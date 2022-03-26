@@ -11,13 +11,14 @@ def loadTextures():
         textures.append([])
     pngtextury = ["blue", "red", "green", "yellow"]
     obj = 0
-    for png in range(3):
+    for png in range(4):
         sheet = arcade.load_spritesheet(f"images/{pngtextury[png]}.png", 56, 88, 10, 30, 0)
         for i in range(0, 10):
             textures[obj].append(sheet[i])
         obj += 1
         print(textures)
     return textures
+
 class Enemy(arcade.Sprite):
     def __init__(self, colour):
         super().__init__()
