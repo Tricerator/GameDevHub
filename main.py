@@ -154,8 +154,8 @@ class GameWindow(arcade.Window):
                 finalPath = imagePath + picName + ".png"
                 background_sprite = Background(finalPath, 1, TILE_SIZE, ANGLE)
 
-                #background_sprite.position = [-TOTAL_WIDTH//2 + column * TILE_SIZE, -TOTAL_HEIGHT // 2 + row * TILE_SIZE]
-                background_sprite.position = [-TOTAL_WIDTH//2 + column * TILE_SIZE + column, -TOTAL_HEIGHT // 2 + row * TILE_SIZE + row]
+                background_sprite.position = [-TOTAL_WIDTH//2 + column * TILE_SIZE, -TOTAL_HEIGHT // 2 + row * TILE_SIZE]
+                #background_sprite.position = [-TOTAL_WIDTH//2 + column * TILE_SIZE + column, -TOTAL_HEIGHT // 2 + row * TILE_SIZE + row]
                 self.scene.add_sprite("Background", background_sprite)
 
     def createWalls(self, WALL_COUNT_INITIAL):
@@ -169,7 +169,7 @@ class GameWindow(arcade.Window):
 
             self.scene.add_sprite("Walls", rock_sprite)
             
-     def buildWall(self):
+    def buildWall(self):
         for dictionary in ["Player", "Enemies", "Companions", "Walls", "Non-walkable things", "Monument"]:
             if len(arcade.check_for_collision_with_list(self.buildingSquare_sprite, self.scene[dictionary])) > 0:
                 break
@@ -222,6 +222,8 @@ class GameWindow(arcade.Window):
     def on_mouse_press(self, x, y, key, modifiers):
         if self.b_pressed:
             self.buildWall()
+        else:
+            self.attack()
 
     def on_key_press(self, key, modifiers):
         if key == arcade.key.W or key == arcade.key.UP:
@@ -332,10 +334,6 @@ class GameWindow(arcade.Window):
         self.graphicsTextures["sword"] = sword
         self.graphicsTextures["armor"] = armor
         self.graphicsTextures["inquisitor"] = inquisitor
-
-    def on_mouse_press(self, x, y, button, modifiers):
-        if button == arcade.MOUSE_BUTTON_LEFT:
-            self.attack()
 
     def on_update(self, delta_time):
         """ Movement and game logic """
