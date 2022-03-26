@@ -8,9 +8,8 @@ LEFT_FACING = 1
 
 class Player(arcade.Sprite):
 
-
-    def __init__(self, image_file_name, scale):
-        super().__init__(image_file_name, scale=scale)
+    def __init__(self):
+        super().__init__()
         self.stamina = 10
         self.max_health = 100
         self.health = self.max_health

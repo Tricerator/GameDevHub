@@ -177,7 +177,7 @@ class GameWindow(arcade.Window):
             self.scene.add_sprite("Enemies", enemy_sprite)
 
     def on_key_press(self, key, modifiers):
-          if key == arcade.key.W or key == arcade.key.UP:
+        if key == arcade.key.W or key == arcade.key.UP:
             self.up_pressed = True
             self.player_sprite.move("U")
         elif key == arcade.key.S or key == arcade.key.DOWN:
@@ -380,3 +380,34 @@ class GameWindow(arcade.Window):
         # kod honza companion
 
         self.player_sprite.update_animation()
+
+    def on_draw(self):
+            """ Draw everything """
+            self.clear()
+
+            self.scene.draw()
+
+            self.gui_camera.use()
+
+            # Draw our score on the screen, scrolling it with the viewport
+            nums = len(self.scene["Enemies"])
+            score_text = f"Coins: {self.player_sprite.coins}\n" + \
+                         f"Enemies: {nums}"
+
+            arcade.draw_rectangle_filled(0, 600, 600, 80, arcade.csscolor.BEIGE)
+            arcade.draw_text(
+                score_text,
+                10,
+                575,
+                arcade.csscolor.BLACK,
+                18,
+            )
+
+def main():
+    """ Main function """
+    window = GameWindow(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+    window.setup()
+    arcade.run()
+
+if __name__ == "__main__":
+        main()
