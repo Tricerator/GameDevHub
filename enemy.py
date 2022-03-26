@@ -42,6 +42,6 @@ class Enemy(arcade.Sprite):
         if self.cur_texture > 10 * UPDATES_PER_FRAME - 1:
             self.cur_texture = 0
         frame = self.cur_texture // UPDATES_PER_FRAME
-        if frame > 3:
+        if frame > 2:
             self.update()
         self.texture = self.colour[frame]
