@@ -275,6 +275,7 @@ class GameWindow(arcade.Window):
 
 
     def attack(self):
+        self.player_sprite.is_attacking = True
 
         addVector = [0, 0]
         if self.player_sprite.viewP[0] < 0:
@@ -456,14 +457,16 @@ class GameWindow(arcade.Window):
             e.update_animation()
 
         # kod honza companion
-
+        self.player_sprite.update()
         self.player_sprite.update_animation()
 
     def on_draw(self):
             """ Draw everything """
             self.clear()
 
-            self.scene.draw()
+            self.scene.draw() 
+            self.player_sprite.hood.draw()
+            self.player_sprite.sword.draw()
 
             self.gui_camera.use()
 
