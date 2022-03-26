@@ -59,6 +59,5 @@ class Companion(arcade.Sprite):
                 if self.boom_texture > 11 * 4 - 1:
                     self.alive = False
                 frame = self.boom_texture // 4
-                print(frame)
                 direction = self.character_face_direction
                 self.texture = self.kaboom_textures[frame]  # [direction]
