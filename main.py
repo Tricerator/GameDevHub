@@ -1,6 +1,4 @@
 import random
-import time
-import os
 
 import arcade
 
@@ -11,7 +9,7 @@ from Player import Player
 from Wall import Wall
 from Companion import Companion
 from enemy import Enemy
-import enemy as
+import enemy as en
 from MapGeneration import generateMap
 
 SCREEN_TITLE = "Gummy terror"
@@ -199,7 +197,7 @@ class GameView(arcade.View):
                                                self.player_sprite.center_y + self.mouse_position_y - SCREEN_HEIGHT // 2]
         self.scene.add_sprite("Building tools", self.buildingSquare_sprite)
 
-   def createEnemies(self, ENEMY_COUNT_INITIAL):
+    def createEnemies(self, ENEMY_COUNT_INITIAL):
 
         for i in range(ENEMY_COUNT_INITIAL):
             colour_scheme = random.choice(self.enemy_texture_list)
@@ -215,7 +213,7 @@ class GameView(arcade.View):
                 enemy_sprite.change_y = random.randint(1, 3)
             else:
                 enemy_sprite.change_y -= random.randint(1, 3)
-            enemy_sprite.size = size
+
             self.scene.add_sprite("Enemies", enemy_sprite)
 
     def on_mouse_motion(self, x: float, y: float, dx: float, dy: float):
@@ -275,8 +273,8 @@ class GameView(arcade.View):
         elif key == arcade.key.D or key == arcade.key.RIGHT:
             self.right_pressed = False
         if key == arcade.key.LCTRL and self.player_sprite.stamina > 0:
-            self.player_sprite.change_x + 2
-            self.player_sprite.change_y + 2
+            # self.player_sprite.change_x + 2
+            # self.player_sprite.change_y + 2
             self.player_sprite.stamina -= 1
 
     def attack(self):
@@ -292,8 +290,9 @@ class GameView(arcade.View):
         else:
             addVector[1] = 2
 
-        for enemy in self.scene["Enemies"]:
-            hit = False
+            # for enemy in self.scene["Enemies"]:
+            # hit = False
+            '''
             if self.player_sprite.viewP[0] <= 0:
                 if enemy.center_x - (self.player_sprite.center_x + addVector[0]) < 0 and \
                         abs(enemy.center_y - self.player_sprite.center_y) < 10:
@@ -310,16 +309,22 @@ class GameView(arcade.View):
                 if enemy.center_y - (self.player_sprite.center_y + addVector[1]) < 0 and \
                         abs(enemy.center_x - self.player_sprite.center_x) < 10:
                     hit = True
-            if hit:
+                    '''
+        enemies = arcade.check_for_collision_with_list(self.player_sprite.sword, self.scene["Enemies"])
+        if len(enemies) > 0:
+            for enemy in enemies:
+
+                # if hit:
                 s = arcade.load_sound(":resources:sounds/hurt2.wav")
                 s.play()
                 enemy.life -= 1
                 if enemy.life <= 0:
-                    self.player_sprite.coins += 10 * enemy.size
+                    self.player_sprite.coins += 10 * enemy.scale
                     self.scene["Enemies"].remove(enemy)
                     enemy.kill()
                     if len(self.scene["Enemies"]) <= 0:
                         snd = arcade.load_sound(":resources:sounds/upgrade1.wav")
+                        snd.play()
 
     def on_update(self, delta_time):
         """ Movement and game logic """
@@ -340,7 +345,7 @@ class GameView(arcade.View):
                             self.player_sprite.center_x + SCREEN_WIDTH / 2,
                             self.player_sprite.center_y - SCREEN_HEIGHT / 2,
                             self.player_sprite.center_y + SCREEN_HEIGHT / 2)
-   #     enemy_speedy = 0.5  # + (self.player_sprite.difficulty / 12)
+        #     enemy_speedy = 0.5  # + (self.player_sprite.difficulty / 12)
         for enemy in self.scene["Enemies"]:
             y_pos = enemy.center_y
             x_pos = enemy.center_x
@@ -352,8 +357,7 @@ class GameView(arcade.View):
                 enemy.dir_y = -1
             if self.player_sprite.center_x <= x_pos:
                 enemy.dir_x = -1
-            enemy.change_x = dir_x * (enemy_speedy) * (3 / enemy.size)
-            enemy.change_y = dir_y * (enemy_speedy) * (3 / enemy.size)
+
             if len(arcade.check_for_collision_with_list(enemy, self.scene["Walls"])) > 0:
                 enemy.change_x *= -1
                 enemy.change_y *= -1
@@ -380,8 +384,8 @@ class GameView(arcade.View):
             elif enemy.boundary_right is not None and enemy.right > enemy.boundary_right:
                 enemy.change_x *= -1
             """
-           # enemy.center_x += enemy.change_x
-           # enemy.center_y += enemy.change_y
+            # enemy.center_x += enemy.change_x
+            # enemy.center_y += enemy.change_y
             hitListEnemy = arcade.check_for_collision_with_list(self.player_sprite, self.scene["Enemies"])
             if len(hitListEnemy) > 0:
                 for enemy in hitListEnemy:
