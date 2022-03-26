@@ -264,6 +264,19 @@ class GameView(arcade.View):
             else:
                 self.buildingSquare_sprite.remove_from_sprite_lists()
 
+        if key == arcade.key.P:
+            self.c_pressed = False
+            self.b_pressed = False
+            self.up_pressed = False
+            self.down_pressed = False
+            self.left_pressed = False
+            self.right_pressed = False
+
+            pause_view = PauseView(self, SCREEN_WIDTH, SCREEN_HEIGHT, self.player_sprite.center_x,
+                                   self.player_sprite.center_y)
+            # pause_view.setup()
+            self.window.show_view(pause_view)
+
         if self.b_pressed:
             if key == arcade.key.KEY_2:
                 self.buildThorns = True
@@ -515,6 +528,63 @@ class GameOverView(arcade.View):
         game_view = GameView()
         game_view.setup()
         self.window.show_view(game_view)
+
+
+class PauseView(arcade.View):
+    def __init__(self, game_view, WIDTH, HEIGHT, px, py):
+        super().__init__()
+        self.game_view = game_view
+        self.width = WIDTH
+        self.height = HEIGHT
+        self.px = px
+        self.py = py
+
+    def on_show(self):
+        arcade.set_background_color(arcade.color.ORANGE)
+
+    def on_draw(self):
+        self.clear()
+
+        # Draw player, for effect, on pause screen.
+        # The previous View (GameView) was passed in
+        # and saved in self.game_view.
+   #     player_sprite = self.game_view.player_sprite
+   #     player_sprite.draw()
+
+        # draw an orange filter over him
+    #    arcade.draw_lrtb_rectangle_filled(left=player_sprite.left,
+      #                                    right=player_sprite.right,
+      #                                    top=player_sprite.top,
+      #                                    bottom=player_sprite.bottom,
+      #                                    color=arcade.color.ORANGE + (200,))
+
+        arcade.set_background_color(arcade.color.ORANGE)
+        arcade.draw_text("PAUSED", self.px, self.py + 50,
+                         arcade.color.BLACK, font_size=50, anchor_x="center")
+
+        # Show tip to return or reset
+        arcade.draw_text("Press Enter to return",
+                         self.px,
+                         self.py,
+                         arcade.color.BLACK,
+                         font_size=20,
+                         anchor_x="center")
+        arcade.draw_text("Press Esc to reset",
+                         self.px,
+                         self.py - 30,
+                         arcade.color.BLACK,
+                         font_size=20,
+                         anchor_x="center")
+
+    def on_key_press(self, key, _modifiers):
+        if key == arcade.key.ENTER:  # resume game
+            self.window.show_view(self.game_view)
+        elif key == arcade.key.ESCAPE:  # reset game
+
+            game_view = GameView()
+            game_view.setup()
+            self.window.show_view(game_view)
+
 
 
 def main():
