@@ -6,6 +6,7 @@ import arcade
 
 from Background import Background
 from BuildingTools import BuildingTools
+# from GameOver import GameOverView
 from Player import Player
 from Wall import Wall
 from Companion import Companion
@@ -24,7 +25,7 @@ TOTAL_WIDTH = TILE_SIZE * MAP_TILE_WIDTH
 TOTAL_HEIGHT = TILE_SIZE * MAP_TILE_HEIGHT
 
 HORIZONTAL_TILES_COUNT = SCREEN_WIDTH // TILE_SIZE
-VERTICAL_TILES_COUNT = SCREEN_HEIGHT // TILE_SIZE #up down
+VERTICAL_TILES_COUNT = SCREEN_HEIGHT // TILE_SIZE  # up down
 
 PLAYER_SPEED = 6
 PLAYER_SCALING = 1
@@ -35,16 +36,19 @@ DIFFICULTY = 5
 SPRITE_IMAGE_SIZE = 128
 SPRITE_SCALING = 0.25
 SPRITE_SIZE = int(SPRITE_IMAGE_SIZE * SPRITE_SCALING)
-class GameWindow(arcade.Window):
+
+
+class GameView(arcade.View):
     """ Main Window """
-    def __init__(self, width, height, title):
+
+    def __init__(self):
         """ Create the variables """
         # Init the parent class
-        super().__init__(width, height, title)
+        super().__init__()
         arcade.set_background_color(arcade.csscolor.DARK_RED)
         self.scene = None
         self.player_sprite = None
-        #building shit
+        # building shit
         self.buildingSquare_sprite = None
         self.buildThorns = False
 
@@ -64,13 +68,12 @@ class GameWindow(arcade.Window):
 
         self.music = None
 
-          # Don't show the mouse cursor
-        self.set_mouse_visible(False)
+        # Don't show the mouse cursor
+        self.window.set_mouse_visible(False)
         self.gui_camera = None
 
         self.graphicsTextures = {}
         self.loadAllTextures()
-
 
     def setup(self):
         """ Set up everything with the game """
@@ -79,11 +82,11 @@ class GameWindow(arcade.Window):
         self.createBackground()
 
         self.scene.add_sprite_list("Player")
-        #self.music = arcade.load_sound("sounds/dark.webm")
-        #self.music.play()
+        # self.music = arcade.load_sound("sounds/dark.webm")
+        # self.music.play()
 
         self.player_sprite = Player()
-        self.player_sprite.position = [SCREEN_WIDTH//2, SCREEN_HEIGHT//2]
+        self.player_sprite.position = [SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2]
         self.scene.add_sprite("Player", self.player_sprite)
 
         self.scene.add_sprite_list("Enemies")
@@ -112,10 +115,9 @@ class GameWindow(arcade.Window):
         self.physics_engine = arcade.PhysicsEngineSimple(
             self.player_sprite, self.scene.get_sprite_list("Walls")
         )
-        
-        self.textures_sheet = arcade.load_spritesheet(f"images/player.png", 128, 64, 12, 60, 0)
-        self.gui_camera = arcade.Camera(self.width, self.height)
 
+        self.textures_sheet = arcade.load_spritesheet(f"images/player.png", 128, 64, 12, 60, 0)
+        self.gui_camera = arcade.Camera(self.window.width, self.window.height)
 
     def createBackground(self):
         imagePath = "images/tiles/cobble/"
@@ -154,44 +156,53 @@ class GameWindow(arcade.Window):
                 finalPath = imagePath + picName + ".png"
                 background_sprite = Background(finalPath, 1, TILE_SIZE, ANGLE)
 
-                background_sprite.position = [-TOTAL_WIDTH//2 + column * TILE_SIZE, -TOTAL_HEIGHT // 2 + row * TILE_SIZE]
-                #background_sprite.position = [-TOTAL_WIDTH//2 + column * TILE_SIZE + column, -TOTAL_HEIGHT // 2 + row * TILE_SIZE + row]
+                background_sprite.position = [-TOTAL_WIDTH // 2 + column * TILE_SIZE,
+                                              -TOTAL_HEIGHT // 2 + row * TILE_SIZE]
+                # background_sprite.position = [-TOTAL_WIDTH//2 + column * TILE_SIZE + column, -TOTAL_HEIGHT // 2 + row * TILE_SIZE + row]
                 self.scene.add_sprite("Background", background_sprite)
 
     def createWalls(self, WALL_COUNT_INITIAL):
         image_list = ["images/rocks/2.png", "images/rocks/3.png"]
         for i in range(WALL_COUNT_INITIAL):
             image_no = random.randint(0, len(image_list) - 1)
-            #size =
+            # size =
             rock_sprite = Wall(image_list[image_no], 1, TILE_SIZE, 40, 0, 0)
 
-            rock_sprite.position = [random.randint(-TOTAL_WIDTH//2, TOTAL_WIDTH//2), random.randint(-TOTAL_HEIGHT//2, TOTAL_HEIGHT//2)]
+            rock_sprite.position = [random.randint(-TOTAL_WIDTH // 2, TOTAL_WIDTH // 2),
+                                    random.randint(-TOTAL_HEIGHT // 2, TOTAL_HEIGHT // 2)]
 
             self.scene.add_sprite("Walls", rock_sprite)
-            
+
     def buildWall(self):
         for dictionary in ["Player", "Enemies", "Companions", "Walls", "Non-walkable things", "Monument"]:
             if len(arcade.check_for_collision_with_list(self.buildingSquare_sprite, self.scene[dictionary])) > 0:
                 break
         else:
-            if self.buildThorns:
+            build = False
+            if self.buildThorns and self.player_sprite.coins >= 30:
+                self.player_sprite.coins -= 30
                 rock_sprite = Wall("images/rocks/spikes.png", 1, TILE_SIZE, 20, 1, 30)
+                build = True
             else:
-                rock_sprite = Wall("images/rocks/Castle_Wall.webp", 1, TILE_SIZE, 40, 0, 20)
-            rock_sprite.position = [self.on_screen_pointer_x, self.on_screen_pointer_y]
-            self.scene.add_sprite("Walls", rock_sprite)
-
+                if self.player_sprite.coins >= 15:
+                    self.player_sprite.coins -= 15
+                    rock_sprite = Wall("images/rocks/Castle_Wall.webp", 1, TILE_SIZE, 40, 0, 20)
+                    build = True
+            if build:
+                rock_sprite.position = [self.on_screen_pointer_x, self.on_screen_pointer_y]
+                self.scene.add_sprite("Walls", rock_sprite)
 
     def createBuildTool(self):
         self.buildingSquare_sprite = BuildingTools("images/build tools/rect.png", 1, TILE_SIZE)
-        self.buildingSquare_sprite.position = [self.player_sprite.center_x + self.mouse_position_x - SCREEN_WIDTH//2, self.player_sprite.center_y + self.mouse_position_y - SCREEN_HEIGHT//2]
+        self.buildingSquare_sprite.position = [self.player_sprite.center_x + self.mouse_position_x - SCREEN_WIDTH // 2,
+                                               self.player_sprite.center_y + self.mouse_position_y - SCREEN_HEIGHT // 2]
         self.scene.add_sprite("Building tools", self.buildingSquare_sprite)
 
     def createEnemies(self, ENEMY_COUNT_INITIAL):
         image_list = ["images/ememy.png"]
         for i in range(ENEMY_COUNT_INITIAL):
-            image_no = random.randint(0, len(image_list) - 1)
-            size = random.randint(1,5)
+            image_no = random.randint(0, len(image_list) - 1)SS
+            size = random.randint(1, 5)
             enemy_sprite = Enemy(image_list[image_no], (size + 5) / 10)
             enemy_sprite.timer_rand = 0
             enemy_sprite.timer_smart = 0
@@ -207,13 +218,9 @@ class GameWindow(arcade.Window):
             enemy_sprite.size = size
             self.scene.add_sprite("Enemies", enemy_sprite)
 
-            
-            
-            
     def on_mouse_motion(self, x: float, y: float, dx: float, dy: float):
         self.mouse_position_x = x
         self.mouse_position_y = y
-
 
         """if self.b_pressed:
             self.buildingSquare_sprite.center_x = self.player_sprite.center_x + self.mouse_position_x - SCREEN_WIDTH//2
@@ -238,10 +245,10 @@ class GameWindow(arcade.Window):
         elif key == arcade.key.D or key == arcade.key.RIGHT:
             self.right_pressed = True
             self.player_sprite.move("R")
-        
+
         elif key == arcade.key.C:
             self.c_pressed = True
-            
+
         elif key == arcade.key.B:
             self.b_pressed = not self.b_pressed
             if self.b_pressed:
@@ -255,8 +262,7 @@ class GameWindow(arcade.Window):
             if key == arcade.key.KEY_1:
                 self.buildThorns = False
 
-            #self.buildWall()
-
+            # self.buildWall()
 
     def on_key_release(self, key, modifiers):
 
@@ -272,7 +278,6 @@ class GameWindow(arcade.Window):
             self.player_sprite.change_x + 2
             self.player_sprite.change_y + 2
             self.player_sprite.stamina -= 1
-
 
     def attack(self):
         self.player_sprite.is_attacking = True
@@ -319,9 +324,9 @@ class GameWindow(arcade.Window):
     def loadAllTextures(self):
 
         for i in ["Green", "Blue", "Red", "Yellow"]:
-          bears = arcade.load_spritesheet(f"images/bear{i}.png",
-                                        56, 88, 10, 30, 1)
-          self.graphicsTextures[f"bears{i}"] = bears
+            bears = arcade.load_spritesheet(f"images/bear{i}.png",
+                                            56, 88, 10, 30, 1)
+            self.graphicsTextures[f"bears{i}"] = bears
 
         sword = arcade.load_spritesheet(f"images/sword.png",
                                         128, 64, 12, 60, 0)
@@ -330,7 +335,7 @@ class GameWindow(arcade.Window):
                                         128, 64, 12, 60, 0)
 
         inquisitor = arcade.load_spritesheet(f"images/inquisitor.png",
-                                        128, 64, 12, 60, 0)
+                                             128, 64, 12, 60, 0)
 
         self.graphicsTextures["sword"] = sword
         self.graphicsTextures["armor"] = armor
@@ -355,7 +360,7 @@ class GameWindow(arcade.Window):
                             self.player_sprite.center_x + SCREEN_WIDTH / 2,
                             self.player_sprite.center_y - SCREEN_HEIGHT / 2,
                             self.player_sprite.center_y + SCREEN_HEIGHT / 2)
-        enemy_speedy = 0.5 # + (self.player_sprite.difficulty / 12)
+        enemy_speedy = 0.5  # + (self.player_sprite.difficulty / 12)
         for enemy in self.scene["Enemies"]:
             y_pos = enemy.center_y
             x_pos = enemy.center_x
@@ -367,9 +372,9 @@ class GameWindow(arcade.Window):
                 dir_y = -1
             if self.player_sprite.center_x <= x_pos:
                 dir_x = -1
-            enemy.change_x = dir_x * (enemy_speedy ) *(3/enemy.size)
-            enemy.change_y = dir_y * (enemy_speedy )*(3/enemy.size)
-            if len(arcade.check_for_collision_with_list(enemy, self.scene["Walls"]) )> 0:
+            enemy.change_x = dir_x * (enemy_speedy) * (3 / enemy.size)
+            enemy.change_y = dir_y * (enemy_speedy) * (3 / enemy.size)
+            if len(arcade.check_for_collision_with_list(enemy, self.scene["Walls"])) > 0:
                 enemy.change_x *= -1
                 enemy.change_y *= -1
                 hitList = arcade.check_for_collision_with_list(enemy, self.scene["Walls"])
@@ -401,7 +406,9 @@ class GameWindow(arcade.Window):
             if len(hitListEnemy) > 0:
                 for enemy in hitListEnemy:
                     if self.player_sprite.health <= 0:
-                       self.player_sprite.kill()
+                        self.player_sprite.kill()
+                        view = GameOverView(SCREEN_WIDTH, SCREEN_HEIGHT)
+                        self.window.show_view(view)
                     self.player_sprite.health -= enemy.size
                     if enemy.center_x < self.player_sprite.center_x:
                         enemy.center_x -= 30
@@ -411,36 +418,36 @@ class GameWindow(arcade.Window):
                         enemy.center_y -= 30
                     elif enemy.center_y >= self.player_sprite.center_y:
                         enemy.center_y += 30
-                        
-        self.on_screen_pointer_x = self.player_sprite.center_x + self.mouse_position_x - SCREEN_WIDTH//2
-        self.on_screen_pointer_y = self.player_sprite.center_y + self.mouse_position_y - SCREEN_HEIGHT//2
+
+        self.on_screen_pointer_x = self.player_sprite.center_x + self.mouse_position_x - SCREEN_WIDTH // 2
+        self.on_screen_pointer_y = self.player_sprite.center_y + self.mouse_position_y - SCREEN_HEIGHT // 2
 
         if self.b_pressed:
-
             self.buildingSquare_sprite.center_x = self.on_screen_pointer_x
             self.buildingSquare_sprite.center_y = self.on_screen_pointer_y
             # kod honza companion
         if self.c_pressed:
-            companion_sprite = Companion()
-            companion_sprite.position = [self.player_sprite.center_x, self.player_sprite.center_y]
-            self.scene.add_sprite("Companions", companion_sprite)
             self.c_pressed = False
+            if self.player_sprite.coins >= 100:
+                companion_sprite = Companion()
+                self.player_sprite.coins -= 100
+                companion_sprite.position = [self.player_sprite.center_x, self.player_sprite.center_y]
+                self.scene.add_sprite("Companions", companion_sprite)
 
         for creeper in self.scene["Companions"]:
             closest = arcade.get_closest_sprite(creeper, self.scene["Enemies"])
             if closest is not None:
                 if creeper.center_x > closest[0].center_x:
-                    creeper.change_x = -0.5 # potom private static final SPEED
+                    creeper.change_x = -0.5  # potom private static final SPEED
                 elif creeper.center_x < closest[0].center_x:
                     creeper.change_x = 0.5
                 if creeper.center_y > closest[0].center_y:
-                    creeper.change_y = -0.5 # potom private static final SPEED
+                    creeper.change_y = -0.5  # potom private static final SPEED
                 elif creeper.center_y < closest[0].center_y:
                     creeper.change_y = 0.5
 
             creeper.update()
             creeper.update_animation()
-
 
             companioncolider = arcade.check_for_collision_with_list(creeper, self.scene["Enemies"])
             if len(companioncolider) > 0:
@@ -448,9 +455,10 @@ class GameWindow(arcade.Window):
                 creeper.walk = False
                 for c in companioncolider:
                     if creeper.alive and not creeper.exploded:
-                        if c.life <= 0:
-                           c.kill()
                         c.life -= 5
+                        if c.life <= 0:
+                            c.kill()
+                            self.player_sprite.coins += c.value
                 creeper.exploded = True
 
         for e in self.scene["Effects"]:
@@ -461,34 +469,64 @@ class GameWindow(arcade.Window):
         self.player_sprite.update_animation()
 
     def on_draw(self):
-            """ Draw everything """
-            self.clear()
+        """ Draw everything """
+        self.clear()
 
-            self.scene.draw() 
-            self.player_sprite.hood.draw()
-            self.player_sprite.sword.draw()
+        self.scene.draw()
+        self.player_sprite.hood.draw()
+        self.player_sprite.sword.draw()
 
-            self.gui_camera.use()
+        self.gui_camera.use()
 
-            # Draw our score on the screen, scrolling it with the viewport
-            nums = len(self.scene["Enemies"])
-            score_text = f"Coins: {self.player_sprite.coins}\n" + \
-                         f"Enemies: {nums}"
+        # Draw our score on the screen, scrolling it with the viewport
+        nums = len(self.scene["Enemies"])
+        score_text = f"Coins: {self.player_sprite.coins}\n" + \
+                     f"Enemies: {nums}"
 
-            arcade.draw_rectangle_filled(0, 600, 600, 80, arcade.csscolor.BEIGE)
-            arcade.draw_text(
-                score_text,
-                10,
-                575,
-                arcade.csscolor.BLACK,
-                18,
-            )
+        arcade.draw_rectangle_filled(0, 600, 600, 80, arcade.csscolor.BEIGE)
+        arcade.draw_text(
+            score_text,
+            10,
+            575,
+            arcade.csscolor.BLACK,
+            18,
+        )
+
+
+class GameOverView(arcade.View):
+    """ View to show when game is over """
+
+    def __init__(self, SCREEN_WIDTH, SCREEN_HEIGHT):
+        """ This is run once when we switch to this view """
+        super().__init__()
+        self.texture = arcade.load_texture("images/gameOver.jpg")
+        self.width = SCREEN_WIDTH
+        self.height = SCREEN_HEIGHT
+        # Reset the viewport, necessary if we have a scrolling game and we need
+        # to reset the viewport back to the start so we can see what we draw.
+        arcade.set_viewport(0, SCREEN_WIDTH - 1, 0, SCREEN_HEIGHT - 1)
+
+    def on_draw(self):
+        """ Draw this view """
+        self.clear()
+        self.texture.draw_sized(self.width / 2, self.height / 2,
+                                self.width, self.height)
+
+    def on_mouse_press(self, _x, _y, _button, _modifiers):
+        """ If the user presses the mouse button, re-start the game. """
+        game_view = GameView()
+        game_view.setup()
+        self.window.show_view(game_view)
+
 
 def main():
     """ Main function """
-    window = GameWindow(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
-    window.setup()
+    window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+    start_view = GameView()
+    window.show_view(start_view)
+    start_view.setup()
     arcade.run()
 
+
 if __name__ == "__main__":
-        main()
+    main()
