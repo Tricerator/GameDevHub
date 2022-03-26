@@ -8,3 +8,4 @@ class Enemy(arcade.Sprite):
         self.timer_smart = 0
         self.speed = 2 #+ (DIFFICULTY/10)
         self.life = 10
+        self.value = 30 + self.size*10
