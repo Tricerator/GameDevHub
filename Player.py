@@ -8,12 +8,29 @@ LEFT_FACING = 1
 
 class Player(arcade.Sprite):
 
-    def __init__(self):
-        super().__init__()
-        self.stamina = 10
-        self.max_health = 10000
-        self.health = self.max_health
 
+    def __init__(self, image_file_name, scale):
+        super().__init__(image_file_name, scale=scale)
+        self.stamina = 10
+        self.max_health = 100
+        self.health = self.max_health
+        self.viewP = ""
+        self.coins = 0
+
+        self.textures = []
+
+        # Load a left facing texture and a right facing texture.
+        # flipped_horizontally=True will mirror the image we load.
+        texture = arcade.load_texture("images/player1.png")
+        self.textures.append(texture)
+        texture = arcade.load_texture("images/player1.png",
+                                      flipped_horizontally=True)
+        self.textures.append(texture)
+
+        # By default, face left.
+        self.texture = self.textures[0]
+        
+        
         self.character_face_direction = RIGHT_FACING
 
         self.idle_textures = []
@@ -32,6 +49,19 @@ class Player(arcade.Sprite):
         self.texture = self.textures_sheet[0]
 
 
+
+    def move(self,key):
+
+        if key == "U":
+            self.viewP = [0, 1]
+        elif key == "D":
+            self.viewP = [0, -1]
+        elif key == "L":
+            self.viewP = [-1, 0]
+        elif key == "R":
+            self.viewP = [1, 0]
+        
+        
 
     def update_animation(self, delta_time: float = 1 / 60):
 
