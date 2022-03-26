@@ -11,6 +11,7 @@ from Player import Player
 from Wall import Wall
 from Companion import Companion
 from enemy import Enemy
+import enemy as
 from MapGeneration import generateMap
 
 SCREEN_TITLE = "Gummy terror"
@@ -73,7 +74,7 @@ class GameView(arcade.View):
         self.gui_camera = None
 
         self.graphicsTextures = {}
-        self.loadAllTextures()
+        self.enemy_texture_list = en.loadTextures()
 
     def setup(self):
         """ Set up everything with the game """
@@ -198,12 +199,11 @@ class GameView(arcade.View):
                                                self.player_sprite.center_y + self.mouse_position_y - SCREEN_HEIGHT // 2]
         self.scene.add_sprite("Building tools", self.buildingSquare_sprite)
 
-    def createEnemies(self, ENEMY_COUNT_INITIAL):
-        image_list = ["images/ememy.png"]
+   def createEnemies(self, ENEMY_COUNT_INITIAL):
+
         for i in range(ENEMY_COUNT_INITIAL):
-            image_no = random.randint(0, len(image_list) - 1)SS
-            size = random.randint(1, 5)
-            enemy_sprite = Enemy(image_list[image_no], (size + 5) / 10)
+            colour_scheme = random.choice(self.enemy_texture_list)
+            enemy_sprite = Enemy(colour_scheme)
             enemy_sprite.timer_rand = 0
             enemy_sprite.timer_smart = 0
             enemy_sprite.position = [random.randint(0, SCREEN_WIDTH), random.randint(0, SCREEN_HEIGHT)]
@@ -321,26 +321,6 @@ class GameView(arcade.View):
                     if len(self.scene["Enemies"]) <= 0:
                         snd = arcade.load_sound(":resources:sounds/upgrade1.wav")
 
-    def loadAllTextures(self):
-
-        for i in ["Green", "Blue", "Red", "Yellow"]:
-            bears = arcade.load_spritesheet(f"images/bear{i}.png",
-                                            56, 88, 10, 30, 1)
-            self.graphicsTextures[f"bears{i}"] = bears
-
-        sword = arcade.load_spritesheet(f"images/sword.png",
-                                        128, 64, 12, 60, 0)
-
-        armor = arcade.load_spritesheet(f"images/armor.png",
-                                        128, 64, 12, 60, 0)
-
-        inquisitor = arcade.load_spritesheet(f"images/inquisitor.png",
-                                             128, 64, 12, 60, 0)
-
-        self.graphicsTextures["sword"] = sword
-        self.graphicsTextures["armor"] = armor
-        self.graphicsTextures["inquisitor"] = inquisitor
-
     def on_update(self, delta_time):
         """ Movement and game logic """
         self.player_sprite.change_x = 0
@@ -360,18 +340,18 @@ class GameView(arcade.View):
                             self.player_sprite.center_x + SCREEN_WIDTH / 2,
                             self.player_sprite.center_y - SCREEN_HEIGHT / 2,
                             self.player_sprite.center_y + SCREEN_HEIGHT / 2)
-        enemy_speedy = 0.5  # + (self.player_sprite.difficulty / 12)
+   #     enemy_speedy = 0.5  # + (self.player_sprite.difficulty / 12)
         for enemy in self.scene["Enemies"]:
             y_pos = enemy.center_y
             x_pos = enemy.center_x
             if self.player_sprite.center_y > y_pos:
-                dir_y = 1
+                enemy.dir_y = 1
             if self.player_sprite.center_x > x_pos:
-                dir_x = 1
+                enemy.dir_x = 1
             if self.player_sprite.center_y <= y_pos:
-                dir_y = -1
+                enemy.dir_y = -1
             if self.player_sprite.center_x <= x_pos:
-                dir_x = -1
+                enemy.dir_x = -1
             enemy.change_x = dir_x * (enemy_speedy) * (3 / enemy.size)
             enemy.change_y = dir_y * (enemy_speedy) * (3 / enemy.size)
             if len(arcade.check_for_collision_with_list(enemy, self.scene["Walls"])) > 0:
@@ -400,8 +380,8 @@ class GameView(arcade.View):
             elif enemy.boundary_right is not None and enemy.right > enemy.boundary_right:
                 enemy.change_x *= -1
             """
-            enemy.center_x += enemy.change_x
-            enemy.center_y += enemy.change_y
+           # enemy.center_x += enemy.change_x
+           # enemy.center_y += enemy.change_y
             hitListEnemy = arcade.check_for_collision_with_list(self.player_sprite, self.scene["Enemies"])
             if len(hitListEnemy) > 0:
                 for enemy in hitListEnemy:
@@ -409,7 +389,7 @@ class GameView(arcade.View):
                         self.player_sprite.kill()
                         view = GameOverView(SCREEN_WIDTH, SCREEN_HEIGHT)
                         self.window.show_view(view)
-                    self.player_sprite.health -= enemy.size
+                    self.player_sprite.health -= enemy.scale
                     if enemy.center_x < self.player_sprite.center_x:
                         enemy.center_x -= 30
                     elif enemy.center_x >= self.player_sprite.center_x:
@@ -461,7 +441,7 @@ class GameView(arcade.View):
                             self.player_sprite.coins += c.value
                 creeper.exploded = True
 
-        for e in self.scene["Effects"]:
+        for e in self.scene["Enemies"]:
             e.update_animation()
 
         # kod honza companion
