@@ -25,7 +25,7 @@ class Companion(arcade.Sprite):
         self.cur_texture = 0
         self.boom_texture = 0
 
-        self.textures_sheet = arcade.load_spritesheet(f"images/player.png", 128, 64, 12, 60, 0)
+        self.textures_sheet = arcade.load_spritesheet(f"images/inquisitor.png", 128, 64, 12, 60, 0)
         for i in range(8):
             self.idle_textures.append(self.textures_sheet[i])
         for i in range(12, 20):
@@ -59,6 +59,5 @@ class Companion(arcade.Sprite):
                 if self.boom_texture > 11 * 4 - 1:
                     self.alive = False
                 frame = self.boom_texture // 4
-                print(frame)
                 direction = self.character_face_direction
                 self.texture = self.kaboom_textures[frame]  # [direction]

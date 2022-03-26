@@ -5,7 +5,6 @@ import os
 import arcade
 
 from Background import Background
-from BuildingTools import BuildingTools
 from Player import Player
 from Wall import Wall
 from Companion import Companion
@@ -44,23 +43,12 @@ class GameWindow(arcade.Window):
         arcade.set_background_color(arcade.csscolor.DARK_RED)
         self.scene = None
         self.player_sprite = None
-        #building shit
-        self.buildingSquare_sprite = None
-        self.buildThorns = False
-
         self.physics_engine = None
-
-        self.mouse_position_x = 0
-        self.mouse_position_y = 0
-
-        self.on_screen_pointer_x = 0
-        self.on_screen_pointer_y = 0
         self.left_pressed = False
         self.right_pressed = False
         self.up_pressed = False
         self.down_pressed = False
         self.c_pressed = False
-        self.b_pressed = False
 
         self.music = None
 
@@ -94,7 +82,6 @@ class GameWindow(arcade.Window):
         self.scene.add_sprite_list("Non-walkable things")
         self.scene.add_sprite_list("Monument")
         self.scene.add_sprite_list("Background")
-        self.scene.add_sprite_list("Building tools")
 
         """for i in range(6):
             rock_sprite = Wall("images/rock.png", ROCK_SCALING)
@@ -113,7 +100,7 @@ class GameWindow(arcade.Window):
             self.player_sprite, self.scene.get_sprite_list("Walls")
         )
         
-        self.textures_sheet = arcade.load_spritesheet(f"images/player.png", 128, 64, 12, 60, 0)
+
         self.gui_camera = arcade.Camera(self.width, self.height)
 
 
@@ -155,7 +142,7 @@ class GameWindow(arcade.Window):
                 background_sprite = Background(finalPath, 1, TILE_SIZE, ANGLE)
 
                 background_sprite.position = [-TOTAL_WIDTH//2 + column * TILE_SIZE, -TOTAL_HEIGHT // 2 + row * TILE_SIZE]
-                #background_sprite.position = [-TOTAL_WIDTH//2 + column * TILE_SIZE + column, -TOTAL_HEIGHT // 2 + row * TILE_SIZE + row]
+                #background_sprite.position = [column * TILE_SIZE + column, row * TILE_SIZE + row]
                 self.scene.add_sprite("Background", background_sprite)
 
     def createWalls(self, WALL_COUNT_INITIAL):
@@ -163,29 +150,11 @@ class GameWindow(arcade.Window):
         for i in range(WALL_COUNT_INITIAL):
             image_no = random.randint(0, len(image_list) - 1)
             #size =
-            rock_sprite = Wall(image_list[image_no], 1, TILE_SIZE, 40, 0, 0)
+            rock_sprite = Wall(image_list[image_no], 1, TILE_SIZE)
 
             rock_sprite.position = [random.randint(-TOTAL_WIDTH//2, TOTAL_WIDTH//2), random.randint(-TOTAL_HEIGHT//2, TOTAL_HEIGHT//2)]
 
             self.scene.add_sprite("Walls", rock_sprite)
-            
-    def buildWall(self):
-        for dictionary in ["Player", "Enemies", "Companions", "Walls", "Non-walkable things", "Monument"]:
-            if len(arcade.check_for_collision_with_list(self.buildingSquare_sprite, self.scene[dictionary])) > 0:
-                break
-        else:
-            if self.buildThorns:
-                rock_sprite = Wall("images/rocks/spikes.png", 1, TILE_SIZE, 20, 1, 30)
-            else:
-                rock_sprite = Wall("images/rocks/Castle_Wall.webp", 1, TILE_SIZE, 40, 0, 20)
-            rock_sprite.position = [self.on_screen_pointer_x, self.on_screen_pointer_y]
-            self.scene.add_sprite("Walls", rock_sprite)
-
-
-    def createBuildTool(self):
-        self.buildingSquare_sprite = BuildingTools("images/build tools/rect.png", 1, TILE_SIZE)
-        self.buildingSquare_sprite.position = [self.player_sprite.center_x + self.mouse_position_x - SCREEN_WIDTH//2, self.player_sprite.center_y + self.mouse_position_y - SCREEN_HEIGHT//2]
-        self.scene.add_sprite("Building tools", self.buildingSquare_sprite)
 
     def createEnemies(self, ENEMY_COUNT_INITIAL):
         image_list = ["images/ememy.png"]
@@ -207,24 +176,6 @@ class GameWindow(arcade.Window):
             enemy_sprite.size = size
             self.scene.add_sprite("Enemies", enemy_sprite)
 
-            
-            
-            
-    def on_mouse_motion(self, x: float, y: float, dx: float, dy: float):
-        self.mouse_position_x = x
-        self.mouse_position_y = y
-
-
-        """if self.b_pressed:
-            self.buildingSquare_sprite.center_x = self.player_sprite.center_x + self.mouse_position_x - SCREEN_WIDTH//2
-            self.buildingSquare_sprite.center_y = self.player_sprite.center_y + self.mouse_position_y - SCREEN_HEIGHT//2"""
-
-    def on_mouse_press(self, x, y, key, modifiers):
-        if self.b_pressed:
-            self.buildWall()
-        else:
-            self.attack()
-
     def on_key_press(self, key, modifiers):
         if key == arcade.key.W or key == arcade.key.UP:
             self.up_pressed = True
@@ -241,21 +192,6 @@ class GameWindow(arcade.Window):
         
         elif key == arcade.key.C:
             self.c_pressed = True
-            
-        elif key == arcade.key.B:
-            self.b_pressed = not self.b_pressed
-            if self.b_pressed:
-                self.createBuildTool()
-            else:
-                self.buildingSquare_sprite.remove_from_sprite_lists()
-
-        if self.b_pressed:
-            if key == arcade.key.KEY_2:
-                self.buildThorns = True
-            if key == arcade.key.KEY_1:
-                self.buildThorns = False
-
-            #self.buildWall()
 
 
     def on_key_release(self, key, modifiers):
@@ -275,6 +211,8 @@ class GameWindow(arcade.Window):
 
 
     def attack(self):
+
+        self.player_sprite.is_attacking = True
 
         addVector = [0, 0]
         if self.player_sprite.viewP[0] < 0:
@@ -335,6 +273,10 @@ class GameWindow(arcade.Window):
         self.graphicsTextures["armor"] = armor
         self.graphicsTextures["inquisitor"] = inquisitor
 
+    def on_mouse_press(self, x, y, button, modifiers):
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            self.attack()
+
     def on_update(self, delta_time):
         """ Movement and game logic """
         self.player_sprite.change_x = 0
@@ -374,18 +316,7 @@ class GameWindow(arcade.Window):
                 hitList = arcade.check_for_collision_with_list(enemy, self.scene["Walls"])
                 for c in hitList:
                     if c.lives <= 0:
-                        if c.damage == 0:
-                            self.music = arcade.load_sound("sounds/wall-crash.wav")
-                        else:
-                            self.music = arcade.load_sound("sounds/thorns.wav")
-                        self.music.play()
-                        c.kill()
-                    c.lives -= 1
-
-                    enemy.life -= c.damage
-                    if enemy.life <= 0:
-                        enemy.kill()
-                        self.player_sprite.coins = enemy.value
+                       c.kill()
                     c.lives -= 1
                 # If the enemy hit the left boundary, reverse
             """  elif enemy.boundary_left is not None and enemy.left < enemy.boundary_left:
@@ -410,14 +341,7 @@ class GameWindow(arcade.Window):
                         enemy.center_y -= 30
                     elif enemy.center_y >= self.player_sprite.center_y:
                         enemy.center_y += 30
-                        
-        self.on_screen_pointer_x = self.player_sprite.center_x + self.mouse_position_x - SCREEN_WIDTH//2
-        self.on_screen_pointer_y = self.player_sprite.center_y + self.mouse_position_y - SCREEN_HEIGHT//2
 
-        if self.b_pressed:
-
-            self.buildingSquare_sprite.center_x = self.on_screen_pointer_x
-            self.buildingSquare_sprite.center_y = self.on_screen_pointer_y
             # kod honza companion
         if self.c_pressed:
             companion_sprite = Companion()
@@ -456,7 +380,7 @@ class GameWindow(arcade.Window):
             e.update_animation()
 
         # kod honza companion
-
+        self.player_sprite.update()
         self.player_sprite.update_animation()
 
     def on_draw(self):
@@ -464,6 +388,8 @@ class GameWindow(arcade.Window):
             self.clear()
 
             self.scene.draw()
+            self.player_sprite.hood.draw()
+            self.player_sprite.sword.draw()
 
             self.gui_camera.use()
 
