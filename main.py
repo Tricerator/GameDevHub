@@ -67,6 +67,8 @@ class GameView(arcade.View):
 
         self.music = None
 
+        self.sounds = {}
+
         # Don't show the mouse cursor
         self.window.set_mouse_visible(False)
         self.gui_camera = None
@@ -97,6 +99,14 @@ class GameView(arcade.View):
         self.scene.add_sprite_list("Monument")
         self.scene.add_sprite_list("Background")
         self.scene.add_sprite_list("Building tools")
+
+        self.sounds["swordAttack"] = arcade.load_sound("sounds/sword_strike2.wav")
+        self.sounds["hit"] = arcade.load_sound(":resources:sounds/hurt2.wav")
+        self.sounds["wall"] = arcade.load_sound("sounds/wall-crash.wav")
+        self.sounds["thorns"] = arcade.load_sound("sounds/thorns.wav")
+        self.sounds["clearGround"] = arcade.load_sound(":resources:sounds/upgrade1.wav")
+
+
 
         """for i in range(6):
             rock_sprite = Wall("images/rock.png", ROCK_SCALING)
@@ -278,6 +288,7 @@ class GameView(arcade.View):
             self.player_sprite.stamina -= 1
 
     def attack(self):
+        self.sounds["swordAttack"].play()
         self.player_sprite.is_attacking = True
 
         addVector = [0, 0]
@@ -315,7 +326,7 @@ class GameView(arcade.View):
             for enemy in enemies:
 
                 # if hit:
-                s = arcade.load_sound(":resources:sounds/hurt2.wav")
+                s = self.sounds["hit"]
                 s.play()
                 enemy.life -= 1
                 if enemy.life <= 0:
@@ -323,8 +334,8 @@ class GameView(arcade.View):
                     self.scene["Enemies"].remove(enemy)
                     enemy.kill()
                     if len(self.scene["Enemies"]) <= 0:
-                        snd = arcade.load_sound(":resources:sounds/upgrade1.wav")
-                        snd.play()
+                        snd =  arcade.load_sound(":resources:sounds/upgrade1.wav")
+                        self.sounds["clearGround"].play()
 
     def on_update(self, delta_time):
         """ Movement and game logic """
@@ -364,11 +375,14 @@ class GameView(arcade.View):
                 hitList = arcade.check_for_collision_with_list(enemy, self.scene["Walls"])
                 for c in hitList:
                     if c.lives <= 0:
+                        choice = ""
                         if c.damage == 0:
-                            self.music = arcade.load_sound("sounds/wall-crash.wav")
+                            choice = "wall"
+
                         else:
-                            self.music = arcade.load_sound("sounds/thorns.wav")
-                        self.music.play()
+                            choice = "thorns"
+
+                        self.sounds[choice].play()
                         c.kill()
                     c.lives -= 1
 
