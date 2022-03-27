@@ -41,6 +41,50 @@ SPRITE_SCALING = 0.25
 SPRITE_SIZE = int(SPRITE_IMAGE_SIZE * SPRITE_SCALING)
 
 
+window = None
+
+class TitleAnime(arcade.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.center_x = SCREEN_WIDTH / 2
+        self.center_y = SCREEN_HEIGHT / 2
+        self.sheet = arcade.load_spritesheet(f"images/title.png", 800, 600, 6, 6, 0)
+        self.cur_texture = 0
+
+    def update_animation(self, delta_time: float = 1 / 60):
+        self.cur_texture += 1
+        if self.cur_texture > 6 * 4 - 1:
+            self.cur_texture = 0
+        frame = self.cur_texture // 4
+        self.texture = self.sheet[frame]
+
+
+
+class TitleView(arcade.View):
+    def __init__(self):
+        super().__init__()
+        self.width = SCREEN_WIDTH
+        self.height = SCREEN_HEIGHT
+        self.title = TitleAnime()
+
+    def setup(self):
+        self.clear()
+
+    def on_show(self):
+        self.clear()
+
+    def on_draw(self):
+        self.clear()
+        self.title.draw()
+
+    def on_update(self, delta_time):
+        self.title.update_animation()
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        game_view = GameView()
+        game_view.setup()
+        self.window.show_view(game_view)
+
 class GameView(arcade.View):
     """ Main Window """
 
@@ -135,7 +179,7 @@ class GameView(arcade.View):
         self.radio = Radio()
         self.radio.position = [SCREEN_WIDTH - 118, 134]
         self.scene.add_sprite("Effects", self.radio)
-        #self.sounds["sabaton"] = arcade.load_sound("sounds/sabaton.mp3")
+        self.sounds["sabaton"] = arcade.load_sound("sounds/8bit.mp3")
         self.sounds["sabaton"].play(self.music_volume, loop=True)
 
         """for i in range(6):
@@ -737,6 +781,20 @@ class GameView(arcade.View):
             18,
         )
 
+class TitleLose(arcade.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.center_x = SCREEN_WIDTH / 2
+        self.center_y = SCREEN_HEIGHT / 2
+        self.sheet = arcade.load_spritesheet(f"images/title_lose.png", 800, 600, 10, 10, 0)
+        self.cur_texture = 0
+
+    def update_animation(self, delta_time: float = 1 / 60):
+        self.cur_texture += 1
+        if self.cur_texture > 10 * 4 - 1:
+            self.cur_texture = 0
+        frame = self.cur_texture // 4
+        self.texture = self.sheet[frame]
 
 class GameOverView(arcade.View):
     """ View to show when game is over """
@@ -749,13 +807,16 @@ class GameOverView(arcade.View):
         self.height = SCREEN_HEIGHT
         # Reset the viewport, necessary if we have a scrolling game and we need
         # to reset the viewport back to the start so we can see what we draw.
+        self.title = TitleLose()
         arcade.set_viewport(0, SCREEN_WIDTH - 1, 0, SCREEN_HEIGHT - 1)
 
     def on_draw(self):
         """ Draw this view """
         self.clear()
-        self.texture.draw_sized(self.width / 2, self.height / 2,
-                                self.width, self.height)
+        self.title.draw()
+
+    def on_update(self, delta_time):
+        self.title.update_animation()
 
     def on_mouse_press(self, _x, _y, _button, _modifiers):
         """ If the user presses the mouse button, re-start the game. """
@@ -999,7 +1060,7 @@ class UpgradeView(arcade.View):
 def main():
     """ Main function """
     window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
-    start_view = GameView()
+    start_view = TitleView()
     window.show_view(start_view)
     start_view.setup()
     arcade.run()
