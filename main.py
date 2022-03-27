@@ -11,6 +11,7 @@ from Companion import Companion
 from enemy import Enemy
 import enemy as en
 from MapGeneration import generateMap
+from Spikes import Spikes
 from Tree import Tree
 
 
@@ -118,6 +119,7 @@ class GameView(arcade.View):
         self.scene.add_sprite_list("Flowers")
 
         self.vse = arcade.SpriteList()
+        self.spiky = arcade.SpriteList()
 
         self.sounds["swordAttack"] = arcade.load_sound("sounds/sword_strike2.wav")
         self.sounds["hit"] = arcade.load_sound(":resources:sounds/hurt2.wav")
@@ -203,7 +205,7 @@ class GameView(arcade.View):
         for i in range(WALL_COUNT_INITIAL):
             image_no = random.randint(0, len(image_list) - 1)
             # size =
-            rock_sprite = Wall(image_list[image_no], 1, TILE_SIZE, 10000, 0, 0)
+            rock_sprite = Wall(image_list[image_no], 1, TILE_SIZE, 1000, 0, 0)
 
             rock_sprite.position = [random.randint(-TOTAL_WIDTH // 2, TOTAL_WIDTH // 2),
                                     random.randint(-TOTAL_HEIGHT // 2, TOTAL_HEIGHT // 2)]
@@ -219,12 +221,18 @@ class GameView(arcade.View):
             build = False
             if self.buildThorns and self.player_sprite.coins >= 30:
                 self.player_sprite.coins -= 30
-                rock_sprite = Wall("images/rocks/spikes.png", 1, TILE_SIZE, 200000, 1, 30)
+                rock_sprite2 = Spikes("images/rocks/spikes.png", 1, TILE_SIZE, 40, 1, 30)
+                rock_sprite = Wall("images/rocks/spikes.png", 1, TILE_SIZE, 40, 1, 30)
+                rock_sprite2.position = [self.on_screen_pointer_x, self.on_screen_pointer_y]
+                self.spiky.append(rock_sprite2)
                 build = True
             else:
                 if self.player_sprite.coins >= 15:
                     self.player_sprite.coins -= 15
-                    rock_sprite = Wall("images/rocks/Castle_Wall.webp", 1, TILE_SIZE, 40000000, 0, 20)
+                    rock_sprite = Wall("images/rocks/Castle_Wall.webp", 1, TILE_SIZE, 100, 0, 20)
+                    rock_sprite2 = Spikes("images/rocks/Castle_Wall.webp", 1, TILE_SIZE, 100, 0, 20)
+                    rock_sprite2.position = [self.on_screen_pointer_x, self.on_screen_pointer_y]
+                    self.spiky.append(rock_sprite2)
                     build = True
             if build:
                 rock_sprite.position = [self.on_screen_pointer_x, self.on_screen_pointer_y]
@@ -485,6 +493,35 @@ class GameView(arcade.View):
                 enemy.dir_y = -1
             if self.player_sprite.center_x <= x_pos:
                 enemy.dir_x = -1
+                
+        if len(arcade.check_for_collision_with_list(enemy, self.spiky)) > 0:
+                enemy.change_x *= -1
+                enemy.change_y *= -1
+                hitList = arcade.check_for_collision_with_list(enemy, self.spiky)
+                for c in hitList:
+                    if c.lives <= 0:
+                        if c.damage == 0:
+                            choice = "wall"
+
+                        else:
+                            choice = "thorns"
+                        self.sounds[choice].play(self.user_volume)
+
+                        hitList = arcade.check_for_collision_with_list(c, self.scene["Walls"])
+                        for a in hitList:
+                            try:
+                                a.kill()
+                            except:
+                                pass
+
+                        c.kill()
+                    c.lives -= 1
+
+                    enemy.life -= c.damage
+                    if enemy.life <= 0:
+                        enemy.kill()
+                        self.player_sprite.coins = enemy.value
+                    c.lives -= 1
 
             if len(arcade.check_for_collision_with_list(enemy, self.scene["Walls"])) > 0:
                 enemy.change_x *= -1
