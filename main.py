@@ -10,6 +10,7 @@ from Wall import Wall
 from Companion import Companion
 from enemy import Enemy
 import enemy as en
+from Radio import Radio
 from MapGeneration import generateMap
 from Spikes import Spikes
 from Tree import Tree
@@ -79,6 +80,7 @@ class GameView(arcade.View):
         self.templeLevel = 0
         self.sounds = {}
         self.user_volume = 0.8
+        self.music_volume = 0.4
 
         # Don't show the mouse cursor
         self.window.set_mouse_visible(False)
@@ -128,6 +130,13 @@ class GameView(arcade.View):
         self.sounds["wall"] = arcade.load_sound("sounds/wall-crash.wav")
         self.sounds["thorns"] = arcade.load_sound("sounds/thorns.wav")
         self.sounds["clearGround"] = arcade.load_sound(":resources:sounds/upgrade1.wav")
+
+        
+        self.radio = Radio()
+        self.radio.position = [SCREEN_WIDTH - 118, 134]
+        self.scene.add_sprite("Effects", self.radio)
+        self.sounds["sabaton"] = arcade.load_sound("sounds/sabaton.mp3")
+        self.sounds["sabaton"].play(self.music_volume, loop=True)
 
         """for i in range(6):
             rock_sprite = Wall("images/rock.png", ROCK_SCALING)
@@ -673,6 +682,7 @@ class GameView(arcade.View):
 
         self.player_sprite.update()
         self.player_sprite.update_animation()
+        self.radio.update_animation()
 
         # strom kolize
         tree_colider = arcade.check_for_collision_with_list(self.player_sprite, self.tree_sprite_list)
