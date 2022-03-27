@@ -6,6 +6,7 @@ from Background import Background
 from BuildingTools import BuildingTools
 # from GameOver import GameOverView
 from Player import Player
+from Spikes import Spikes
 from Wall import Wall
 from Companion import Companion
 from enemy import Enemy
@@ -49,8 +50,6 @@ class GameView(arcade.View):
         arcade.set_background_color(arcade.csscolor.DARK_RED)
         self.scene = None
         self.player_sprite = None
-        self.numOfEnemies = 10
-        self.rounds = 0
         # building shit
         self.buildingSquare_sprite = None
         self.buildThorns = False
@@ -118,6 +117,7 @@ class GameView(arcade.View):
         self.scene.add_sprite_list("Flowers")
 
         self.vse = arcade.SpriteList()
+        self.spiky = arcade.SpriteList()
 
         self.sounds["swordAttack"] = arcade.load_sound("sounds/sword_strike2.wav")
         self.sounds["hit"] = arcade.load_sound(":resources:sounds/hurt2.wav")
@@ -138,7 +138,7 @@ class GameView(arcade.View):
         enemy_sprite.position = [random.randint(0, SCREEN_WIDTH), random.randint(0, SCREEN_HEIGHT)]
         self.scene.add_sprite("Enemies", enemy_sprite)"""
 
-        self.createEnemies()
+        self.createEnemies(6)
 
         self.physics_engine = arcade.PhysicsEngineSimple(
             self.player_sprite, self.scene.get_sprite_list("Walls")
@@ -203,7 +203,7 @@ class GameView(arcade.View):
         for i in range(WALL_COUNT_INITIAL):
             image_no = random.randint(0, len(image_list) - 1)
             # size =
-            rock_sprite = Wall(image_list[image_no], 1, TILE_SIZE, 10000, 0, 0)
+            rock_sprite = Wall(image_list[image_no], 1, TILE_SIZE, 1000, 0, 0)
 
             rock_sprite.position = [random.randint(-TOTAL_WIDTH // 2, TOTAL_WIDTH // 2),
                                     random.randint(-TOTAL_HEIGHT // 2, TOTAL_HEIGHT // 2)]
@@ -219,12 +219,19 @@ class GameView(arcade.View):
             build = False
             if self.buildThorns and self.player_sprite.coins >= 30:
                 self.player_sprite.coins -= 30
-                rock_sprite = Wall("images/rocks/spikes.png", 1, TILE_SIZE, 200000, 1, 30)
+                rock_sprite2 = Spikes("images/rocks/spikes.png", 1, TILE_SIZE, 40, 1, 30)
+                rock_sprite = Wall("images/rocks/spikes.png", 1, TILE_SIZE, 40, 1, 30)
+                rock_sprite2.position = [self.on_screen_pointer_x, self.on_screen_pointer_y]
+                self.spiky.append(rock_sprite2)
+
                 build = True
             else:
                 if self.player_sprite.coins >= 15:
                     self.player_sprite.coins -= 15
-                    rock_sprite = Wall("images/rocks/Castle_Wall.webp", 1, TILE_SIZE, 40000000, 0, 20)
+                    rock_sprite = Wall("images/rocks/Castle_Wall.webp", 1, TILE_SIZE, 100, 0, 20)
+                    rock_sprite2 = Spikes("images/rocks/Castle_Wall.webp", 1, TILE_SIZE, 100, 0, 20)
+                    rock_sprite2.position = [self.on_screen_pointer_x, self.on_screen_pointer_y]
+                    self.spiky.append(rock_sprite2)
                     build = True
             if build:
                 rock_sprite.position = [self.on_screen_pointer_x, self.on_screen_pointer_y]
@@ -268,20 +275,15 @@ class GameView(arcade.View):
                                                self.player_sprite.center_y + self.mouse_position_y - SCREEN_HEIGHT // 2]
         self.scene.add_sprite("Building tools", self.buildingSquare_sprite)
 
-    def createEnemies(self, ):
-        self.rounds += 1
-        ENEMY_COUNT_INITIAL = self.numOfEnemies + (self.rounds // 3)
+    def createEnemies(self, ENEMY_COUNT_INITIAL):
 
         for i in range(ENEMY_COUNT_INITIAL):
             colour_scheme = random.choice(self.enemy_texture_list)
             enemy_sprite = Enemy(colour_scheme)
             enemy_sprite.timer_rand = 0
             enemy_sprite.timer_smart = 0
-            enemy_sprite.life += (5 * self.rounds)
-            enemy_sprite.value += (3*self.rounds)
             enemy_sprite.position = [random.randint(0, SCREEN_WIDTH), random.randint(0, SCREEN_HEIGHT)]
             enemy_sprite.phys = arcade.PhysicsEngineSimple(enemy_sprite, self.vse)
-
 
             if self.player_sprite.center_x > enemy_sprite.center_x:
                 enemy_sprite.change_x = random.randint(1, 3)
@@ -486,6 +488,36 @@ class GameView(arcade.View):
             if self.player_sprite.center_x <= x_pos:
                 enemy.dir_x = -1
 
+
+            if len(arcade.check_for_collision_with_list(enemy, self.spiky)) > 0:
+                enemy.change_x *= -1
+                enemy.change_y *= -1
+                hitList = arcade.check_for_collision_with_list(enemy, self.spiky)
+                for c in hitList:
+                    if c.lives <= 0:
+                        if c.damage == 0:
+                            choice = "wall"
+
+                        else:
+                            choice = "thorns"
+                        self.sounds[choice].play(self.user_volume)
+
+                        hitList = arcade.check_for_collision_with_list(c, self.scene["Walls"])
+                        for a in hitList:
+                            try:
+                                a.kill()
+                            except:
+                                pass
+
+                        c.kill()
+                    c.lives -= 1
+
+                    enemy.life -= c.damage
+                    if enemy.life <= 0:
+                        enemy.kill()
+                        self.player_sprite.coins = enemy.value
+                    c.lives -= 1
+
             if len(arcade.check_for_collision_with_list(enemy, self.scene["Walls"])) > 0:
                 enemy.change_x *= -1
                 enemy.change_y *= -1
@@ -604,9 +636,6 @@ class GameView(arcade.View):
             else:
                 self.treeToDraw = tree
                 #tree.draw()
-
-        if(len(self.scene["Enemies"])) == 0:
-            self.createEnemies()
 
     def on_draw(self):
         """ Draw everything """
