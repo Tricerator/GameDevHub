@@ -49,6 +49,8 @@ class GameView(arcade.View):
         arcade.set_background_color(arcade.csscolor.DARK_RED)
         self.scene = None
         self.player_sprite = None
+        self.numOfEnemies = 10
+        self.rounds = 0
         # building shit
         self.buildingSquare_sprite = None
         self.buildThorns = False
@@ -136,7 +138,7 @@ class GameView(arcade.View):
         enemy_sprite.position = [random.randint(0, SCREEN_WIDTH), random.randint(0, SCREEN_HEIGHT)]
         self.scene.add_sprite("Enemies", enemy_sprite)"""
 
-        self.createEnemies(6)
+        self.createEnemies()
 
         self.physics_engine = arcade.PhysicsEngineSimple(
             self.player_sprite, self.scene.get_sprite_list("Walls")
@@ -266,15 +268,20 @@ class GameView(arcade.View):
                                                self.player_sprite.center_y + self.mouse_position_y - SCREEN_HEIGHT // 2]
         self.scene.add_sprite("Building tools", self.buildingSquare_sprite)
 
-    def createEnemies(self, ENEMY_COUNT_INITIAL):
+    def createEnemies(self, ):
+        self.rounds += 1
+        ENEMY_COUNT_INITIAL = self.numOfEnemies + (self.rounds // 3)
 
         for i in range(ENEMY_COUNT_INITIAL):
             colour_scheme = random.choice(self.enemy_texture_list)
             enemy_sprite = Enemy(colour_scheme)
             enemy_sprite.timer_rand = 0
             enemy_sprite.timer_smart = 0
+            enemy_sprite.life += (5 * self.rounds)
+            enemy_sprite.value += (3*self.rounds)
             enemy_sprite.position = [random.randint(0, SCREEN_WIDTH), random.randint(0, SCREEN_HEIGHT)]
             enemy_sprite.phys = arcade.PhysicsEngineSimple(enemy_sprite, self.vse)
+
 
             if self.player_sprite.center_x > enemy_sprite.center_x:
                 enemy_sprite.change_x = random.randint(1, 3)
@@ -597,6 +604,9 @@ class GameView(arcade.View):
             else:
                 self.treeToDraw = tree
                 #tree.draw()
+
+        if(len(self.scene["Enemies"])) == 0:
+            self.createEnemies()
 
     def on_draw(self):
         """ Draw everything """
