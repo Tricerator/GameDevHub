@@ -1,5 +1,5 @@
 import random
-
+import os
 import arcade
 
 from Background import Background
@@ -11,6 +11,8 @@ from Companion import Companion
 from enemy import Enemy
 import enemy as en
 from MapGeneration import generateMap
+from Tree import Tree
+
 
 SCREEN_TITLE = "Gummy terror"
 
@@ -52,7 +54,9 @@ class GameView(arcade.View):
         self.buildThorns = False
 
         self.physics_engine = None
-
+        self.tree_engine = None
+        self.enemies_engine = None
+        
         self.mouse_position_x = 0
         self.mouse_position_y = 0
 
@@ -78,6 +82,13 @@ class GameView(arcade.View):
 
         self.graphicsTextures = {}
         self.enemy_texture_list = en.loadTextures()
+        self.mapList = None
+
+        #Trees
+        self.tree_sprite_list = arcade.SpriteList()
+        #self.flower_sprite_list = arcade.SpriteList()
+
+        self.treeToDraw = None
 
     def setup(self):
         """ Set up everything with the game """
@@ -102,6 +113,7 @@ class GameView(arcade.View):
         self.scene.add_sprite_list("Monument")
         self.scene.add_sprite_list("Background")
         self.scene.add_sprite_list("Building tools")
+        self.scene.add_sprite_list("Flowers")
 
         self.sounds["swordAttack"] = arcade.load_sound("sounds/sword_strike2.wav")
         self.sounds["hit"] = arcade.load_sound(":resources:sounds/hurt2.wav")
@@ -127,6 +139,9 @@ class GameView(arcade.View):
         self.physics_engine = arcade.PhysicsEngineSimple(
             self.player_sprite, self.scene.get_sprite_list("Walls")
         )
+        self.tree_engine = arcade.PhysicsEngineSimple(
+            self.player_sprite, self.tree_sprite_list
+        )
 
         self.textures_sheet = arcade.load_spritesheet(f"images/player.png", 128, 64, 12, 60, 0)
         self.gui_camera = arcade.Camera(self.window.width, self.window.height)
@@ -134,12 +149,17 @@ class GameView(arcade.View):
     def createBackground(self):
         imagePath = "images/tiles/cobble/"
 
-        mapList = generateMap(MAP_TILE_WIDTH, MAP_TILE_HEIGHT)
-        for row in range(len(mapList)):
-            for column in range(len(mapList[row])):
-                picName = mapList[row][column]
-                if picName == "GGGG" and random.randint(0, 100) > 90:
-                    picName = "GGGG2"
+        self.mapList = generateMap(MAP_TILE_WIDTH, MAP_TILE_HEIGHT)
+        for row in range(len(self.mapList)):
+            for column in range(len(self.mapList[row])):
+                picName = self.mapList[row][column]
+                if picName == "GGGG":
+                    if random.randint(0, 100) > 90:
+                        picName = "GGGG2"
+                    if random.randint(0, 1000) > 971:
+                        self.plantTrees(-TOTAL_WIDTH // 2 + column * TILE_SIZE, -TOTAL_HEIGHT // 2 + row * TILE_SIZE + 192)
+                    elif random.randint(0, 1000) > 901:
+                        self.plantFlowers(-TOTAL_WIDTH // 2 + column * TILE_SIZE, -TOTAL_HEIGHT // 2 + row * TILE_SIZE)
 
                 elif picName == "GRGR" and random.randint(0, 100) > 50:
                     picName = "GRGR2"
@@ -178,7 +198,7 @@ class GameView(arcade.View):
         for i in range(WALL_COUNT_INITIAL):
             image_no = random.randint(0, len(image_list) - 1)
             # size =
-            rock_sprite = Wall(image_list[image_no], 1, TILE_SIZE, 40, 0, 0)
+            rock_sprite = Wall(image_list[image_no], 1, TILE_SIZE, 1000, 0, 0)
 
             rock_sprite.position = [random.randint(-TOTAL_WIDTH // 2, TOTAL_WIDTH // 2),
                                     random.randint(-TOTAL_HEIGHT // 2, TOTAL_HEIGHT // 2)]
@@ -203,6 +223,37 @@ class GameView(arcade.View):
             if build:
                 rock_sprite.position = [self.on_screen_pointer_x, self.on_screen_pointer_y]
                 self.scene.add_sprite("Walls", rock_sprite)
+                
+      def plantFlowers(self, x, y):
+        path = "images/grass/"
+        listOfFlower = os.listdir(path)
+        flower_sprite = Tree(path + random.choice(listOfFlower), 1, 150)
+        flower_sprite.position = [x, y]
+        #self.flower_sprite_list.append(flower_sprite)
+        self.scene.add_sprite("Flowers", flower_sprite)
+
+
+    def plantTrees(self, x, y):
+        path = "images/trees/"
+        listOfTrees = os.listdir(path)
+
+        tree_sprite = Tree(path + random.choice(listOfTrees), 1, 30)
+
+        """hit_boxes = [
+            [tree_sprite.center_x - 10, tree_sprite.center_y],
+            [tree_sprite.center_x + 10, tree_sprite.center_y],
+            [tree_sprite.center_x - 10, tree_sprite.center_y - 10],
+            [tree_sprite.center_x + 10, tree_sprite.center_y - 10]
+        ]
+        tree_sprite.set_hit_box(hit_boxes)"""
+        #tree_sprite.phys = arcade.PhysicsEngineSimple(tree_sprite, self.player_sprite)
+        tree_sprite.position = [x, y]
+
+        #self.scene.add_sprite("Trees", tree_sprite)
+        self.tree_sprite_list.append(tree_sprite)
+        """for i in self.scene["Trees"]:
+            print(i)"""
+
 
     def createBuildTool(self):
         self.buildingSquare_sprite = BuildingTools("images/build tools/rect.png", 1, TILE_SIZE)
@@ -228,9 +279,14 @@ class GameView(arcade.View):
             else:
                 enemy_sprite.change_y -= random.randint(1, 3)
 
+            self.enemies_engine = arcade.PhysicsEngineSimple(
+                enemy_sprite, self.scene.get_sprite_list("Walls")
+            )
 
-            enemy_sprite.phys = arcade.PhysicsEngineSimple(enemy_sprite, self.scene.get_sprite_list("Enemies"))
-
+            self.enemies_engine = arcade.PhysicsEngineSimple(
+                enemy_sprite, self.tree_sprite_list
+            )
+    
             self.scene.add_sprite("Enemies", enemy_sprite)
 
     def on_mouse_motion(self, x: float, y: float, dx: float, dy: float):
@@ -397,6 +453,9 @@ class GameView(arcade.View):
         self.player_sprite.center_x += self.player_sprite.change_x
         self.player_sprite.center_y += self.player_sprite.change_y
         self.physics_engine.update()
+        self.tree_engine.update()
+        self.enemies_engine.update()
+        
         arcade.set_viewport(self.player_sprite.center_x - SCREEN_WIDTH / 2,
                             self.player_sprite.center_x + SCREEN_WIDTH / 2,
                             self.player_sprite.center_y - SCREEN_HEIGHT / 2,
@@ -436,15 +495,20 @@ class GameView(arcade.View):
                         enemy.kill()
                         self.player_sprite.coins = enemy.value
                     c.lives -= 1
-                # If the enemy hit the left boundary, reverse
-            """  elif enemy.boundary_left is not None and enemy.left < enemy.boundary_left:
+            
+            if len(arcade.check_for_collision_with_list(enemy, self.tree_sprite_list)) > 0:
                 enemy.change_x *= -1
-                # If the enemy hit the right boundary, reverse
-            elif enemy.boundary_right is not None and enemy.right > enemy.boundary_right:
-                enemy.change_x *= -1
-            """
-            # enemy.center_x += enemy.change_x
-            # enemy.center_y += enemy.change_y
+                enemy.change_y *= -1
+                hitList = arcade.check_for_collision_with_list(enemy, self.tree_sprite_list)
+                for c in hitList:
+
+                    if c.lives <= 0:
+                        #self.sounds[choice].play()
+                        c.kill()
+                    c.lives -= 1
+                    
+                    
+                    
             hitListEnemy = arcade.check_for_collision_with_list(self.player_sprite, self.scene["Enemies"])
             if len(hitListEnemy) > 0:
                 for enemy in hitListEnemy:
@@ -506,18 +570,38 @@ class GameView(arcade.View):
 
         for e in self.scene["Enemies"]:
             e.update_animation()
-            e.phys.update()
+          
 
         self.player_sprite.update()
         self.player_sprite.update_animation()
+        
+        #strom kolize
+        tree_colider = arcade.check_for_collision_with_list(self.player_sprite, self.tree_sprite_list)
+
+
+        #print(self.scene["Trees"])
+        #print("ooof", len(tree_colider))
+
+        for tree in tree_colider:
+            if self.player_sprite.bottom < tree.bottom:
+                self.player_sprite.draw()
+            else:
+                self.treeToDraw = tree
+                #tree.draw()
 
     def on_draw(self):
         """ Draw everything """
         self.clear()
 
         self.scene.draw()
+        self.tree_sprite_list.draw()
         self.player_sprite.hood.draw()
         self.player_sprite.sword.draw()
+        
+        try:
+            self.treeToDraw.draw()
+        except:
+            pass
 
         self.gui_camera.use()
 
