@@ -115,6 +115,8 @@ class GameView(arcade.View):
         self.scene.add_sprite_list("Building tools")
         self.scene.add_sprite_list("Flowers")
 
+        self.vse = arcade.SpriteList()
+
         self.sounds["swordAttack"] = arcade.load_sound("sounds/sword_strike2.wav")
         self.sounds["hit"] = arcade.load_sound(":resources:sounds/hurt2.wav")
         self.sounds["wall"] = arcade.load_sound("sounds/wall-crash.wav")
@@ -145,6 +147,7 @@ class GameView(arcade.View):
 
         self.textures_sheet = arcade.load_spritesheet(f"images/player.png", 128, 64, 12, 60, 0)
         self.gui_camera = arcade.Camera(self.window.width, self.window.height)
+
 
     def createBackground(self):
         imagePath = "images/tiles/cobble/"
@@ -198,12 +201,13 @@ class GameView(arcade.View):
         for i in range(WALL_COUNT_INITIAL):
             image_no = random.randint(0, len(image_list) - 1)
             # size =
-            rock_sprite = Wall(image_list[image_no], 1, TILE_SIZE, 1000, 0, 0)
+            rock_sprite = Wall(image_list[image_no], 1, TILE_SIZE, 10000, 0, 0)
 
             rock_sprite.position = [random.randint(-TOTAL_WIDTH // 2, TOTAL_WIDTH // 2),
                                     random.randint(-TOTAL_HEIGHT // 2, TOTAL_HEIGHT // 2)]
 
             self.scene.add_sprite("Walls", rock_sprite)
+            self.vse.append(rock_sprite)
 
     def buildWall(self):
         for dictionary in ["Player", "Enemies", "Companions", "Walls", "Non-walkable things", "Monument"]:
@@ -213,18 +217,19 @@ class GameView(arcade.View):
             build = False
             if self.buildThorns and self.player_sprite.coins >= 30:
                 self.player_sprite.coins -= 30
-                rock_sprite = Wall("images/rocks/spikes.png", 1, TILE_SIZE, 20, 1, 30)
+                rock_sprite = Wall("images/rocks/spikes.png", 1, TILE_SIZE, 200000, 1, 30)
                 build = True
             else:
                 if self.player_sprite.coins >= 15:
                     self.player_sprite.coins -= 15
-                    rock_sprite = Wall("images/rocks/Castle_Wall.webp", 1, TILE_SIZE, 40, 0, 20)
+                    rock_sprite = Wall("images/rocks/Castle_Wall.webp", 1, TILE_SIZE, 40000000, 0, 20)
                     build = True
             if build:
                 rock_sprite.position = [self.on_screen_pointer_x, self.on_screen_pointer_y]
                 self.scene.add_sprite("Walls", rock_sprite)
+                self.vse.append(rock_sprite)
                 
-      def plantFlowers(self, x, y):
+    def plantFlowers(self, x, y):
         path = "images/grass/"
         listOfFlower = os.listdir(path)
         flower_sprite = Tree(path + random.choice(listOfFlower), 1, 150)
@@ -269,6 +274,7 @@ class GameView(arcade.View):
             enemy_sprite.timer_rand = 0
             enemy_sprite.timer_smart = 0
             enemy_sprite.position = [random.randint(0, SCREEN_WIDTH), random.randint(0, SCREEN_HEIGHT)]
+            enemy_sprite.phys = arcade.PhysicsEngineSimple(enemy_sprite, self.vse)
 
             if self.player_sprite.center_x > enemy_sprite.center_x:
                 enemy_sprite.change_x = random.randint(1, 3)
@@ -278,16 +284,17 @@ class GameView(arcade.View):
                 enemy_sprite.change_y = random.randint(1, 3)
             else:
                 enemy_sprite.change_y -= random.randint(1, 3)
-
-            self.enemies_engine = arcade.PhysicsEngineSimple(
+            """
+            enemy_sprite.enemies_engine_walls = arcade.PhysicsEngineSimple(
                 enemy_sprite, self.scene.get_sprite_list("Walls")
             )
 
-            self.enemies_engine = arcade.PhysicsEngineSimple(
+            enemy_sprite.enemies_engine_trees = arcade.PhysicsEngineSimple(
                 enemy_sprite, self.tree_sprite_list
             )
-    
+            """
             self.scene.add_sprite("Enemies", enemy_sprite)
+            self.vse.append(enemy_sprite)
 
     def on_mouse_motion(self, x: float, y: float, dx: float, dy: float):
         self.mouse_position_x = x
@@ -454,7 +461,6 @@ class GameView(arcade.View):
         self.player_sprite.center_y += self.player_sprite.change_y
         self.physics_engine.update()
         self.tree_engine.update()
-        self.enemies_engine.update()
         
         arcade.set_viewport(self.player_sprite.center_x - SCREEN_WIDTH / 2,
                             self.player_sprite.center_x + SCREEN_WIDTH / 2,
@@ -570,7 +576,10 @@ class GameView(arcade.View):
 
         for e in self.scene["Enemies"]:
             e.update_animation()
-          
+            e.phys.update()
+            #e.enemies_engine_walls.update()
+            #e.enemies_engine_trees.update()
+
 
         self.player_sprite.update()
         self.player_sprite.update_animation()
@@ -626,8 +635,6 @@ class GameView(arcade.View):
             18,
         )
 
-        for e in self.scene["Enemies"]:
-            e.draw_hit_box()
 
 
 class GameOverView(arcade.View):
