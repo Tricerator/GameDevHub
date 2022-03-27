@@ -141,6 +141,7 @@ class GameView(arcade.View):
         self.scene.add_sprite("Enemies", enemy_sprite)"""
 
         self.createEnemies()
+        self.createBorder()
 
         self.physics_engine = arcade.PhysicsEngineSimple(
             self.player_sprite, self.scene.get_sprite_list("Walls")
@@ -199,6 +200,18 @@ class GameView(arcade.View):
                                               -TOTAL_HEIGHT // 2 + row * TILE_SIZE]
                 # background_sprite.position = [-TOTAL_WIDTH//2 + column * TILE_SIZE + column, -TOTAL_HEIGHT // 2 + row * TILE_SIZE + row]
                 self.scene.add_sprite("Background", background_sprite)
+                
+    def createBorder(self):
+        for wideIndex in range(-10, MAP_TILE_WIDTH + 10 + 2):
+            for highIndex in range(-10, MAP_TILE_HEIGHT + 10 + 2):
+                if wideIndex <= 0 or highIndex <= 0 or wideIndex >= MAP_TILE_WIDTH + 1 or highIndex >= MAP_TILE_HEIGHT + 1:
+
+                    border_sprite = Wall("images/rocks/better_wall.png", 1, TILE_SIZE, 999999999, 1, 0)
+                    border_sprite.position = [-TOTAL_WIDTH // 2 - TILE_SIZE + TILE_SIZE * wideIndex,
+                                              -TOTAL_HEIGHT // 2 - TILE_SIZE + TILE_SIZE * highIndex]
+
+                    self.scene.add_sprite("Walls", border_sprite)
+                    self.vse.append(border_sprite)
 
     def createWalls(self, WALL_COUNT_INITIAL):
         image_list = ["images/rocks/2.png", "images/rocks/3.png"]
@@ -227,13 +240,14 @@ class GameView(arcade.View):
                 self.spiky.append(rock_sprite2)
                 build = True
             else:
-                if self.player_sprite.coins >= 15:
-                    self.player_sprite.coins -= 15
-                    rock_sprite = Wall("images/rocks/Castle_Wall.webp", 1, TILE_SIZE, 100, 0, 20)
-                    rock_sprite2 = Spikes("images/rocks/Castle_Wall.webp", 1, TILE_SIZE, 100, 0, 20)
-                    rock_sprite2.position = [self.on_screen_pointer_x, self.on_screen_pointer_y]
-                    self.spiky.append(rock_sprite2)
-                    build = True
+              if self.buildThorns == False:
+                    if self.player_sprite.coins >= 15:
+                        self.player_sprite.coins -= 15
+                        rock_sprite = Wall("./images/rocks/better_wall.png", 1, TILE_SIZE, 100, 0, 20)
+                        rock_sprite2 = Spikes("./images/rocks/better_wall.png", 1, TILE_SIZE, 100, 0, 20)
+                        rock_sprite2.position = [self.on_screen_pointer_x, self.on_screen_pointer_y]
+                        self.spiky.append(rock_sprite2)
+                        build = True
             if build:
                 rock_sprite.position = [self.on_screen_pointer_x, self.on_screen_pointer_y]
                 self.scene.add_sprite("Walls", rock_sprite)
