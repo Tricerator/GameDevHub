@@ -494,7 +494,7 @@ class GameView(arcade.View):
             if self.player_sprite.center_x <= x_pos:
                 enemy.dir_x = -1
                 
-        if len(arcade.check_for_collision_with_list(enemy, self.spiky)) > 0:
+            if len(arcade.check_for_collision_with_list(enemy, self.spiky)) > 0:
                 enemy.change_x *= -1
                 enemy.change_y *= -1
                 hitList = arcade.check_for_collision_with_list(enemy, self.spiky)
