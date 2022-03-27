@@ -1,12 +1,10 @@
 import arcade
 import random
-
 GREEN = 0
 BLUE = 1
 RED = 2
 YELLOW = 3
 UPDATES_PER_FRAME = 8
-
 def loadTextures():
     textures = []
     for i in range(4):
