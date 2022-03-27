@@ -1,12 +1,10 @@
 import arcade
 import random
-
 GREEN = 0
 BLUE = 1
 RED = 2
 YELLOW = 3
 UPDATES_PER_FRAME = 8
-
 def loadTextures():
     textures = []
     for i in range(4):
@@ -34,11 +32,24 @@ class Enemy(arcade.Sprite):
         self.dir_y = None
         self.texture = self.colour[0]
         self.cur_texture = 0
+        self.phys = None
+        self.points = None
+
+        x = self.width * 0.69 / self.scale
+        y = self.height * 0.42 / self.scale
+        self.hit_box = [[- x/2, - y/2],
+                        [+ x/2, - y/2],
+                        [+ x/2, + y/2],
+                        [- x/2, + y/2]]
+                        
+
+
     def update(self):
         self.change_x = self.dir_x
         self.change_y = self.dir_y
         self.center_x += self.change_x
         self.center_y += self.change_y
+
     def update_animation(self, delta_time: float = 1 / 60):
         self.cur_texture += 1
         if self.cur_texture > 10 * UPDATES_PER_FRAME - 1:
