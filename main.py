@@ -1,3 +1,4 @@
+import os
 import random
 
 import arcade
@@ -6,6 +7,7 @@ from Background import Background
 from BuildingTools import BuildingTools
 # from GameOver import GameOverView
 from Player import Player
+from Tree import Tree
 from Wall import Wall
 from Companion import Companion
 from enemy import Enemy
@@ -52,6 +54,8 @@ class GameView(arcade.View):
         self.buildThorns = False
 
         self.physics_engine = None
+        self.tree_engine = None
+        self.enemies_engine = None
 
         self.mouse_position_x = 0
         self.mouse_position_y = 0
@@ -64,13 +68,10 @@ class GameView(arcade.View):
         self.down_pressed = False
         self.c_pressed = False
         self.b_pressed = False
-        self.k_pressed = False
-        self.l_pressed = False
 
         self.music = None
 
         self.sounds = {}
-        self.user_volume = 0.8
 
         # Don't show the mouse cursor
         self.window.set_mouse_visible(False)
@@ -78,6 +79,13 @@ class GameView(arcade.View):
 
         self.graphicsTextures = {}
         self.enemy_texture_list = en.loadTextures()
+        self.mapList = None
+
+        #Trees
+        self.tree_sprite_list = arcade.SpriteList()
+        #self.flower_sprite_list = arcade.SpriteList()
+
+        self.treeToDraw = None
 
     def setup(self):
         """ Set up everything with the game """
@@ -102,6 +110,8 @@ class GameView(arcade.View):
         self.scene.add_sprite_list("Monument")
         self.scene.add_sprite_list("Background")
         self.scene.add_sprite_list("Building tools")
+        #self.scene.add_sprite_list("Trees")
+        self.scene.add_sprite_list("Flowers")
 
         self.sounds["swordAttack"] = arcade.load_sound("sounds/sword_strike2.wav")
         self.sounds["hit"] = arcade.load_sound(":resources:sounds/hurt2.wav")
@@ -128,18 +138,27 @@ class GameView(arcade.View):
             self.player_sprite, self.scene.get_sprite_list("Walls")
         )
 
+        self.tree_engine = arcade.PhysicsEngineSimple(
+            self.player_sprite, self.tree_sprite_list
+        )
+
         self.textures_sheet = arcade.load_spritesheet(f"images/player.png", 128, 64, 12, 60, 0)
         self.gui_camera = arcade.Camera(self.window.width, self.window.height)
 
     def createBackground(self):
         imagePath = "images/tiles/cobble/"
 
-        mapList = generateMap(MAP_TILE_WIDTH, MAP_TILE_HEIGHT)
-        for row in range(len(mapList)):
-            for column in range(len(mapList[row])):
-                picName = mapList[row][column]
-                if picName == "GGGG" and random.randint(0, 100) > 90:
-                    picName = "GGGG2"
+        self.mapList = generateMap(MAP_TILE_WIDTH, MAP_TILE_HEIGHT)
+        for row in range(len(self.mapList)):
+            for column in range(len(self.mapList[row])):
+                picName = self.mapList[row][column]
+                if picName == "GGGG":
+                    if random.randint(0, 100) > 90:
+                        picName = "GGGG2"
+                    if random.randint(0, 1000) > 971:
+                        self.plantTrees(-TOTAL_WIDTH // 2 + column * TILE_SIZE, -TOTAL_HEIGHT // 2 + row * TILE_SIZE + 192)
+                    elif random.randint(0, 1000) > 901:
+                        self.plantFlowers(-TOTAL_WIDTH // 2 + column * TILE_SIZE, -TOTAL_HEIGHT // 2 + row * TILE_SIZE)
 
                 elif picName == "GRGR" and random.randint(0, 100) > 50:
                     picName = "GRGR2"
@@ -178,7 +197,7 @@ class GameView(arcade.View):
         for i in range(WALL_COUNT_INITIAL):
             image_no = random.randint(0, len(image_list) - 1)
             # size =
-            rock_sprite = Wall(image_list[image_no], 1, TILE_SIZE, 40, 0, 0)
+            rock_sprite = Wall(image_list[image_no], 1, TILE_SIZE, 1000, 0, 0)
 
             rock_sprite.position = [random.randint(-TOTAL_WIDTH // 2, TOTAL_WIDTH // 2),
                                     random.randint(-TOTAL_HEIGHT // 2, TOTAL_HEIGHT // 2)]
@@ -204,6 +223,37 @@ class GameView(arcade.View):
                 rock_sprite.position = [self.on_screen_pointer_x, self.on_screen_pointer_y]
                 self.scene.add_sprite("Walls", rock_sprite)
 
+    def plantFlowers(self, x, y):
+        path = "images/grass/"
+        listOfFlower = os.listdir(path)
+        flower_sprite = Tree(path + random.choice(listOfFlower), 1, 150)
+        flower_sprite.position = [x, y]
+        #self.flower_sprite_list.append(flower_sprite)
+        self.scene.add_sprite("Flowers", flower_sprite)
+
+
+    def plantTrees(self, x, y):
+        path = "images/trees/"
+        listOfTrees = os.listdir(path)
+
+        tree_sprite = Tree(path + random.choice(listOfTrees), 1, 30)
+
+        """hit_boxes = [
+            [tree_sprite.center_x - 10, tree_sprite.center_y],
+            [tree_sprite.center_x + 10, tree_sprite.center_y],
+            [tree_sprite.center_x - 10, tree_sprite.center_y - 10],
+            [tree_sprite.center_x + 10, tree_sprite.center_y - 10]
+        ]
+        tree_sprite.set_hit_box(hit_boxes)"""
+        #tree_sprite.phys = arcade.PhysicsEngineSimple(tree_sprite, self.player_sprite)
+        tree_sprite.position = [x, y]
+
+        #self.scene.add_sprite("Trees", tree_sprite)
+        self.tree_sprite_list.append(tree_sprite)
+        """for i in self.scene["Trees"]:
+            print(i)"""
+
+
     def createBuildTool(self):
         self.buildingSquare_sprite = BuildingTools("images/build tools/rect.png", 1, TILE_SIZE)
         self.buildingSquare_sprite.position = [self.player_sprite.center_x + self.mouse_position_x - SCREEN_WIDTH // 2,
@@ -218,7 +268,6 @@ class GameView(arcade.View):
             enemy_sprite.timer_rand = 0
             enemy_sprite.timer_smart = 0
             enemy_sprite.position = [random.randint(0, SCREEN_WIDTH), random.randint(0, SCREEN_HEIGHT)]
-
             if self.player_sprite.center_x > enemy_sprite.center_x:
                 enemy_sprite.change_x = random.randint(1, 3)
             else:
@@ -228,8 +277,13 @@ class GameView(arcade.View):
             else:
                 enemy_sprite.change_y -= random.randint(1, 3)
 
+            self.enemies_engine = arcade.PhysicsEngineSimple(
+                enemy_sprite, self.scene.get_sprite_list("Walls")
+            )
 
-            enemy_sprite.phys = arcade.PhysicsEngineSimple(enemy_sprite, self.scene.get_sprite_list("Enemies"))
+            self.enemies_engine = arcade.PhysicsEngineSimple(
+                enemy_sprite, self.tree_sprite_list
+            )
 
             self.scene.add_sprite("Enemies", enemy_sprite)
 
@@ -264,28 +318,12 @@ class GameView(arcade.View):
         elif key == arcade.key.C:
             self.c_pressed = True
 
-        if key == arcade.key.K:
-            self.k_pressed = True
-        elif key == arcade.key.L:
-            self.l_pressed = True
-
         elif key == arcade.key.B:
             self.b_pressed = not self.b_pressed
             if self.b_pressed:
                 self.createBuildTool()
             else:
                 self.buildingSquare_sprite.remove_from_sprite_lists()
-        elif key == arcade.key.U:
-            self.c_pressed = False
-            self.b_pressed = False
-            self.up_pressed = False
-            self.down_pressed = False
-            self.left_pressed = False
-            self.right_pressed = False
-
-            upgrade_view = UpgradeView(self, self.player_sprite.center_x, self.player_sprite.center_y)
-            # pause_view.setup()
-            self.window.show_view(upgrade_view)
 
         if key == arcade.key.P:
             self.c_pressed = False
@@ -306,15 +344,6 @@ class GameView(arcade.View):
             if key == arcade.key.KEY_1:
                 self.buildThorns = False
 
-        if self.k_pressed:
-            if self.user_volume > 0.2:
-                self.user_volume -= 0.1
-            self.k_pressed = False
-        elif self.l_pressed:
-            if self.user_volume < 1:
-                self.user_volume += 0.1
-            self.l_pressed = False
-
             # self.buildWall()
 
     def on_key_release(self, key, modifiers):
@@ -333,7 +362,7 @@ class GameView(arcade.View):
             self.player_sprite.stamina -= 1
 
     def attack(self):
-        self.sounds["swordAttack"].play(self.user_volume)
+        self.sounds["swordAttack"].play()
         self.player_sprite.is_attacking = True
 
         addVector = [0, 0]
@@ -372,7 +401,7 @@ class GameView(arcade.View):
 
                 # if hit:
                 s = self.sounds["hit"]
-                s.play(self.user_volume)
+                s.play()
                 enemy.life -= 1
                 if enemy.life <= 0:
                     self.player_sprite.coins += 10 * enemy.scale
@@ -380,7 +409,8 @@ class GameView(arcade.View):
                     enemy.kill()
                     if len(self.scene["Enemies"]) <= 0:
                         snd =  arcade.load_sound(":resources:sounds/upgrade1.wav")
-                        self.sounds["clearGround"].play(self.user_volume)
+                        self.sounds["clearGround"].play()
+
 
     def on_update(self, delta_time):
         """ Movement and game logic """
@@ -397,6 +427,8 @@ class GameView(arcade.View):
         self.player_sprite.center_x += self.player_sprite.change_x
         self.player_sprite.center_y += self.player_sprite.change_y
         self.physics_engine.update()
+        self.tree_engine.update()
+        self.enemies_engine.update()
         arcade.set_viewport(self.player_sprite.center_x - SCREEN_WIDTH / 2,
                             self.player_sprite.center_x + SCREEN_WIDTH / 2,
                             self.player_sprite.center_y - SCREEN_HEIGHT / 2,
@@ -427,7 +459,7 @@ class GameView(arcade.View):
                         else:
                             choice = "thorns"
 
-                        self.sounds[choice].play(self.user_volume)
+                        self.sounds[choice].play()
                         c.kill()
                     c.lives -= 1
 
@@ -436,15 +468,18 @@ class GameView(arcade.View):
                         enemy.kill()
                         self.player_sprite.coins = enemy.value
                     c.lives -= 1
-                # If the enemy hit the left boundary, reverse
-            """  elif enemy.boundary_left is not None and enemy.left < enemy.boundary_left:
+
+            if len(arcade.check_for_collision_with_list(enemy, self.tree_sprite_list)) > 0:
                 enemy.change_x *= -1
-                # If the enemy hit the right boundary, reverse
-            elif enemy.boundary_right is not None and enemy.right > enemy.boundary_right:
-                enemy.change_x *= -1
-            """
-            # enemy.center_x += enemy.change_x
-            # enemy.center_y += enemy.change_y
+                enemy.change_y *= -1
+                hitList = arcade.check_for_collision_with_list(enemy, self.tree_sprite_list)
+                for c in hitList:
+
+                    if c.lives <= 0:
+                        #self.sounds[choice].play()
+                        c.kill()
+                    c.lives -= 1
+
             hitListEnemy = arcade.check_for_collision_with_list(self.player_sprite, self.scene["Enemies"])
             if len(hitListEnemy) > 0:
                 for enemy in hitListEnemy:
@@ -468,7 +503,7 @@ class GameView(arcade.View):
         if self.b_pressed:
             self.buildingSquare_sprite.center_x = self.on_screen_pointer_x
             self.buildingSquare_sprite.center_y = self.on_screen_pointer_y
-
+            # kod honza companion
         if self.c_pressed:
             self.c_pressed = False
             if self.player_sprite.coins >= 100:
@@ -506,18 +541,39 @@ class GameView(arcade.View):
 
         for e in self.scene["Enemies"]:
             e.update_animation()
-            e.phys.update()
 
+        # kod honza companion
         self.player_sprite.update()
         self.player_sprite.update_animation()
+
+        #strom kolize
+        tree_colider = arcade.check_for_collision_with_list(self.player_sprite, self.tree_sprite_list)
+
+
+        #print(self.scene["Trees"])
+        #print("ooof", len(tree_colider))
+
+        for tree in tree_colider:
+            if self.player_sprite.bottom < tree.bottom:
+                self.player_sprite.draw()
+            else:
+                self.treeToDraw = tree
+                #tree.draw()
 
     def on_draw(self):
         """ Draw everything """
         self.clear()
 
         self.scene.draw()
+        self.tree_sprite_list.draw()
+        #self.flower_sprite_list.draw()
         self.player_sprite.hood.draw()
         self.player_sprite.sword.draw()
+
+        try:
+            self.treeToDraw.draw()
+        except:
+            pass
 
         self.gui_camera.use()
 
@@ -534,16 +590,9 @@ class GameView(arcade.View):
             arcade.csscolor.BLACK,
             18,
         )
-        arcade.draw_text(
-            "vol "+str(int(self.user_volume * 100))+"%",
-            690,
-            575,
-            arcade.csscolor.BLACK,
-            18,
-        )
 
-        for e in self.scene["Enemies"]:
-            e.draw_hit_box()
+        """for tree in self.tree_sprite_list:
+            tree.draw_hit_box()"""
 
 
 class GameOverView(arcade.View):
@@ -570,8 +619,8 @@ class GameOverView(arcade.View):
         game_view = GameView()
         game_view.setup()
         self.window.show_view(game_view)
-        
-        
+
+
 class PauseView(arcade.View):
     def __init__(self, game_view, WIDTH, HEIGHT, px, py):
         super().__init__()
@@ -590,15 +639,15 @@ class PauseView(arcade.View):
         # Draw player, for effect, on pause screen.
         # The previous View (GameView) was passed in
         # and saved in self.game_view.
-        #     player_sprite = self.game_view.player_sprite
-        #     player_sprite.draw()
+   #     player_sprite = self.game_view.player_sprite
+   #     player_sprite.draw()
 
         # draw an orange filter over him
-        #    arcade.draw_lrtb_rectangle_filled(left=player_sprite.left,
-        #                                    right=player_sprite.right,
-        #                                    top=player_sprite.top,
-        #                                    bottom=player_sprite.bottom,
-        #                                    color=arcade.color.ORANGE + (200,))
+    #    arcade.draw_lrtb_rectangle_filled(left=player_sprite.left,
+      #                                    right=player_sprite.right,
+      #                                    top=player_sprite.top,
+      #                                    bottom=player_sprite.bottom,
+      #                                    color=arcade.color.ORANGE + (200,))
 
         arcade.set_background_color(arcade.color.ORANGE)
         arcade.draw_text("PAUSED", self.px, self.py + 50,
@@ -619,7 +668,7 @@ class PauseView(arcade.View):
                          anchor_x="center")
 
     def on_key_press(self, key, _modifiers):
-        if key == arcade.key.ENTER or key == arcade.key.P:  #
+        if key == arcade.key.ENTER:  # resume game
             self.window.show_view(self.game_view)
         elif key == arcade.key.ESCAPE:  # reset game
 
@@ -628,153 +677,6 @@ class PauseView(arcade.View):
             self.window.show_view(game_view)
 
 
-class UpgradeView(arcade.View):
-
-    def __init__(self, game_view, pX, pY):
-        super().__init__()
-        self.clear()
-        self.window.set_mouse_visible(True)
-        self.game_view = game_view
-        self.items = {}
-        self.fillItems()
-
-        self.lastRow = 0
-        self.lastColumn = 0
-        self.thisRow = 0
-        self.thisColumn = 0
-
-        self.pX = pX - 250
-        self.pY = pY - 250
-        self.ROW_COUNT = 5
-        self.COLUMN_COUNT = 5
-
-        # This sets the WIDTH and HEIGHT of each grid location
-        self.WIDTH = 80
-        self.HEIGHT = 80
-
-        # This sets the margin between each cell
-        # and on the edges of the screen.
-        self.MARGIN = 15
-
-        # Do the math to figure out our screen dimensions
-        self.SCREEN_WIDTH = (self.WIDTH + self.MARGIN) * self.COLUMN_COUNT + self.MARGIN
-        self.SCREEN_HEIGHT = (self.HEIGHT + self.MARGIN) * self.ROW_COUNT + self.MARGIN
-        self.SCREEN_TITLE = "Array Backed Grid Buffered Example"
-
-        self.background_color = arcade.color.BLACK
-
-        # One dimensional list of all sprites in the two-dimensional sprite list
-        self.grid_sprite_list = arcade.SpriteList()
-
-        # This will be a two-dimensional grid of sprites to mirror the two
-        # dimensional grid of numbers. This points to the SAME sprites that are
-        # in grid_sprite_list, just in a 2d manner.
-        self.grid_sprites = []
-
-        for row in range(self.ROW_COUNT):
-            self.grid_sprites.append([])
-            for column in range(self.COLUMN_COUNT):
-                x = column * (self.WIDTH + self.MARGIN) + (self.WIDTH / 2 + self.MARGIN) + self.pX
-                y = row * (self.HEIGHT + self.MARGIN) + (self.HEIGHT / 2 + self.MARGIN) + self.pY
-                if row == 1 or column == 0 :
-                    sprite = arcade.SpriteSolidColor(self.WIDTH, self.HEIGHT, arcade.csscolor.GHOST_WHITE)
-                else:
-                    sprite = arcade.SpriteSolidColor(self.WIDTH, self.HEIGHT, arcade.color.WHITE)
-                sprite.center_x = x
-                sprite.center_y = y
-                self.grid_sprite_list.append(sprite)
-
-                self.grid_sprites[row].append(sprite)
-
-    def fillItems(self):
-
-        """
-        key = item
-        [0] = texture
-        [1] = [x,y]
-        [2] = text under
-        [3] = coins
-        [4] = bool (taken/free)
-        [5] = {"stat" -> "bonus"}
-        """
-
-
-        ''' 
-        3 - stojici kape
-        6 - stojici mec
-        0 - comp
-        '''
-        self.items["sword"] = []
-        self.items["sword"].append(self.game_view.player_sprite.all_textures[6][0][0])
-        self.items["sword"].append([4, 1])
-
-        self.items["comp"] = []
-        self.items["comp"].append(self.game_view.player_sprite.all_textures[0][0][0])
-        self.items["comp"].append([4, 2])
-
-        self.items["wall"] = []
-        self.items["wall"]
-
-    def setup(self):
-        self.clear()
-
-    def on_show(self):
-        self.clear()
-        arcade.set_background_color(arcade.csscolor.GHOST_WHITE)
-
-    def on_draw(self):
-        """
-        Render the screen.
-        """
-        # We should always start by clearing the window pixels
-        self.clear()
-
-        # Batch draw the grid sprites
-        self.grid_sprite_list.draw()
-
-        for i in ["sword", "comp"]:
-            x = self.items[i][1][0]
-            y = self.items[i][1][1]
-            self.grid_sprites[x][y].texture = self.items[i][0]
-
-        if self.thisColumn != self.lastColumn and self.thisRow != self.lastRow:
-            arcade.draw_text("UPGRADE SHOP",
-                             50 + self.pX,50 + self.pY,
-                             arcade.color.BLACK, 12,
-                             anchor_x = "center")
-
-    def on_key_press(self, symbol: int, modifiers: int):
-
-        if symbol == arcade.key.ESCAPE:
-            self.window.show_view(self.game_view)
-
-    def on_mouse_press(self, x, y, button, modifiers):
-        """
-        Called when the user presses a mouse button.
-        """
-
-        # Convert the clicked mouse position into grid coordinates
-        column = int((x - 150) // (self.WIDTH + self.MARGIN))
-        row = int((y - 60) // (self.HEIGHT + self.MARGIN))
-
-        print(f"Click coordinates: ({x}, {y}). Grid coordinates: ({row}, {column})")
-
-        # Make sure we are on-grid. It is possible to click in the upper right
-        # corner in the margin and go to a grid location that doesn't exist
-        if row >= self.ROW_COUNT or column >= self.COLUMN_COUNT:
-            # Simply return from this method since nothing needs updating
-            return
-        if row < 0 or column < 0:
-            return
-        # Flip the color of the sprite
-        if row == 1 or column == 0 : return
-        if self.grid_sprites[row][column].color == arcade.color.WHITE:
-            self.grid_sprites[self.lastRow][self.lastColumn].color = arcade.color.WHITE
-            self.grid_sprites[row][column].color = arcade.color.GREEN
-            self.lastRow = row
-            self.lastColumn = column
-        else:
-            self.grid_sprites[row][column].color = arcade.color.WHITE
 
 def main():
     """ Main function """
