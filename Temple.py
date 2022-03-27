@@ -9,7 +9,7 @@ class Temple(arcade.Sprite):
         self.level = 0
         self.textures = []
         self.readTextures()
-        self.levelCost = {0: 250, 1: 550, 2: 750, 3: 1250}
+        self.levelCost = {0: 205, 1: 550, 2: 750, 3: 1250}
 
     def readTextures(self):
 
