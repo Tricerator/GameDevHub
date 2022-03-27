@@ -64,13 +64,10 @@ class GameView(arcade.View):
         self.down_pressed = False
         self.c_pressed = False
         self.b_pressed = False
-        self.k_pressed = False
-        self.l_pressed = False
 
         self.music = None
 
         self.sounds = {}
-        self.user_volume = 0.8
 
         # Don't show the mouse cursor
         self.window.set_mouse_visible(False)
@@ -108,8 +105,6 @@ class GameView(arcade.View):
         self.sounds["wall"] = arcade.load_sound("sounds/wall-crash.wav")
         self.sounds["thorns"] = arcade.load_sound("sounds/thorns.wav")
         self.sounds["clearGround"] = arcade.load_sound(":resources:sounds/upgrade1.wav")
-
-
 
         """for i in range(6):
             rock_sprite = Wall("images/rock.png", ROCK_SCALING)
@@ -218,7 +213,6 @@ class GameView(arcade.View):
             enemy_sprite.timer_rand = 0
             enemy_sprite.timer_smart = 0
             enemy_sprite.position = [random.randint(0, SCREEN_WIDTH), random.randint(0, SCREEN_HEIGHT)]
-
             if self.player_sprite.center_x > enemy_sprite.center_x:
                 enemy_sprite.change_x = random.randint(1, 3)
             else:
@@ -227,9 +221,6 @@ class GameView(arcade.View):
                 enemy_sprite.change_y = random.randint(1, 3)
             else:
                 enemy_sprite.change_y -= random.randint(1, 3)
-
-
-            enemy_sprite.phys = arcade.PhysicsEngineSimple(enemy_sprite, self.scene.get_sprite_list("Enemies"))
 
             self.scene.add_sprite("Enemies", enemy_sprite)
 
@@ -264,32 +255,42 @@ class GameView(arcade.View):
         elif key == arcade.key.C:
             self.c_pressed = True
 
-        if key == arcade.key.K:
-            self.k_pressed = True
-        elif key == arcade.key.L:
-            self.l_pressed = True
-
         elif key == arcade.key.B:
             self.b_pressed = not self.b_pressed
             if self.b_pressed:
                 self.createBuildTool()
             else:
                 self.buildingSquare_sprite.remove_from_sprite_lists()
+        elif key == arcade.key.U:
+            self.c_pressed = False
+            self.b_pressed = False
+            self.up_pressed = False
+            self.down_pressed = False
+            self.left_pressed = False
+            self.right_pressed = False
+
+            upgrade_view = UpgradeView(self, self.player_sprite.center_x, self.player_sprite.center_y)
+            # pause_view.setup()
+            self.window.show_view(upgrade_view)
+
+        if key == arcade.key.P:
+            self.c_pressed = False
+            self.b_pressed = False
+            self.up_pressed = False
+            self.down_pressed = False
+            self.left_pressed = False
+            self.right_pressed = False
+
+            pause_view = PauseView(self, SCREEN_WIDTH, SCREEN_HEIGHT, self.player_sprite.center_x,
+                                   self.player_sprite.center_y)
+            # pause_view.setup()
+            self.window.show_view(pause_view)
 
         if self.b_pressed:
             if key == arcade.key.KEY_2:
                 self.buildThorns = True
             if key == arcade.key.KEY_1:
                 self.buildThorns = False
-
-        if self.k_pressed:
-            if self.user_volume > 0.2:
-                self.user_volume -= 0.1
-            self.k_pressed = False
-        elif self.l_pressed:
-            if self.user_volume < 1:
-                self.user_volume += 0.1
-            self.l_pressed = False
 
             # self.buildWall()
 
@@ -309,7 +310,7 @@ class GameView(arcade.View):
             self.player_sprite.stamina -= 1
 
     def attack(self):
-        self.sounds["swordAttack"].play(self.user_volume)
+        self.sounds["swordAttack"].play()
         self.player_sprite.is_attacking = True
 
         addVector = [0, 0]
@@ -348,15 +349,15 @@ class GameView(arcade.View):
 
                 # if hit:
                 s = self.sounds["hit"]
-                s.play(self.user_volume)
+                s.play()
                 enemy.life -= 1
                 if enemy.life <= 0:
                     self.player_sprite.coins += 10 * enemy.scale
                     self.scene["Enemies"].remove(enemy)
                     enemy.kill()
                     if len(self.scene["Enemies"]) <= 0:
-                        snd =  arcade.load_sound(":resources:sounds/upgrade1.wav")
-                        self.sounds["clearGround"].play(self.user_volume)
+                        snd = arcade.load_sound(":resources:sounds/upgrade1.wav")
+                        self.sounds["clearGround"].play()
 
     def on_update(self, delta_time):
         """ Movement and game logic """
@@ -403,7 +404,7 @@ class GameView(arcade.View):
                         else:
                             choice = "thorns"
 
-                        self.sounds[choice].play(self.user_volume)
+                        self.sounds[choice].play()
                         c.kill()
                     c.lives -= 1
 
@@ -444,7 +445,7 @@ class GameView(arcade.View):
         if self.b_pressed:
             self.buildingSquare_sprite.center_x = self.on_screen_pointer_x
             self.buildingSquare_sprite.center_y = self.on_screen_pointer_y
-
+            # kod honza companion
         if self.c_pressed:
             self.c_pressed = False
             if self.player_sprite.coins >= 100:
@@ -482,8 +483,8 @@ class GameView(arcade.View):
 
         for e in self.scene["Enemies"]:
             e.update_animation()
-            e.phys.update()
 
+        # kod honza companion
         self.player_sprite.update()
         self.player_sprite.update_animation()
 
@@ -510,16 +511,6 @@ class GameView(arcade.View):
             arcade.csscolor.BLACK,
             18,
         )
-        arcade.draw_text(
-            "vol "+str(int(self.user_volume * 100))+"%",
-            690,
-            575,
-            arcade.csscolor.BLACK,
-            18,
-        )
-
-        for e in self.scene["Enemies"]:
-            e.draw_hit_box()
 
 
 class GameOverView(arcade.View):
@@ -546,6 +537,211 @@ class GameOverView(arcade.View):
         game_view = GameView()
         game_view.setup()
         self.window.show_view(game_view)
+
+
+class PauseView(arcade.View):
+    def __init__(self, game_view, WIDTH, HEIGHT, px, py):
+        super().__init__()
+        self.game_view = game_view
+        self.width = WIDTH
+        self.height = HEIGHT
+        self.px = px
+        self.py = py
+
+    def on_show(self):
+        arcade.set_background_color(arcade.color.ORANGE)
+
+    def on_draw(self):
+        self.clear()
+
+        # Draw player, for effect, on pause screen.
+        # The previous View (GameView) was passed in
+        # and saved in self.game_view.
+        #     player_sprite = self.game_view.player_sprite
+        #     player_sprite.draw()
+
+        # draw an orange filter over him
+        #    arcade.draw_lrtb_rectangle_filled(left=player_sprite.left,
+        #                                    right=player_sprite.right,
+        #                                    top=player_sprite.top,
+        #                                    bottom=player_sprite.bottom,
+        #                                    color=arcade.color.ORANGE + (200,))
+
+        arcade.set_background_color(arcade.color.ORANGE)
+        arcade.draw_text("PAUSED", self.px, self.py + 50,
+                         arcade.color.BLACK, font_size=50, anchor_x="center")
+
+        # Show tip to return or reset
+        arcade.draw_text("Press Enter to return",
+                         self.px,
+                         self.py,
+                         arcade.color.BLACK,
+                         font_size=20,
+                         anchor_x="center")
+        arcade.draw_text("Press Esc to reset",
+                         self.px,
+                         self.py - 30,
+                         arcade.color.BLACK,
+                         font_size=20,
+                         anchor_x="center")
+
+    def on_key_press(self, key, _modifiers):
+        if key == arcade.key.ENTER or key == arcade.key.P:  #
+            self.window.show_view(self.game_view)
+        elif key == arcade.key.ESCAPE:  # reset game
+
+            game_view = GameView()
+            game_view.setup()
+            self.window.show_view(game_view)
+
+
+class UpgradeView(arcade.View):
+
+    def __init__(self, game_view, pX, pY):
+        super().__init__()
+        self.clear()
+        self.window.set_mouse_visible(True)
+        self.game_view = game_view
+        self.items = {}
+        self.fillItems()
+
+        self.lastRow = 0
+        self.lastColumn = 0
+        self.thisRow = 0
+        self.thisColumn = 0
+
+        self.pX = pX - 250
+        self.pY = pY - 250
+        self.ROW_COUNT = 5
+        self.COLUMN_COUNT = 5
+
+        # This sets the WIDTH and HEIGHT of each grid location
+        self.WIDTH = 80
+        self.HEIGHT = 80
+
+        # This sets the margin between each cell
+        # and on the edges of the screen.
+        self.MARGIN = 15
+
+        # Do the math to figure out our screen dimensions
+        self.SCREEN_WIDTH = (self.WIDTH + self.MARGIN) * self.COLUMN_COUNT + self.MARGIN
+        self.SCREEN_HEIGHT = (self.HEIGHT + self.MARGIN) * self.ROW_COUNT + self.MARGIN
+        self.SCREEN_TITLE = "Array Backed Grid Buffered Example"
+
+        self.background_color = arcade.color.BLACK
+
+        # One dimensional list of all sprites in the two-dimensional sprite list
+        self.grid_sprite_list = arcade.SpriteList()
+
+        # This will be a two-dimensional grid of sprites to mirror the two
+        # dimensional grid of numbers. This points to the SAME sprites that are
+        # in grid_sprite_list, just in a 2d manner.
+        self.grid_sprites = []
+
+        for row in range(self.ROW_COUNT):
+            self.grid_sprites.append([])
+            for column in range(self.COLUMN_COUNT):
+                x = column * (self.WIDTH + self.MARGIN) + (self.WIDTH / 2 + self.MARGIN) + self.pX
+                y = row * (self.HEIGHT + self.MARGIN) + (self.HEIGHT / 2 + self.MARGIN) + self.pY
+                if row == 1 or column == 0 :
+                    sprite = arcade.SpriteSolidColor(self.WIDTH, self.HEIGHT, arcade.csscolor.GHOST_WHITE)
+                else:
+                    sprite = arcade.SpriteSolidColor(self.WIDTH, self.HEIGHT, arcade.color.WHITE)
+                sprite.center_x = x
+                sprite.center_y = y
+                self.grid_sprite_list.append(sprite)
+
+                self.grid_sprites[row].append(sprite)
+
+    def fillItems(self):
+
+        """
+        key = item
+        [0] = texture
+        [1] = [x,y]
+        [2] = text under
+        [3] = coins
+        [4] = bool (taken/free)
+        [5] = {"stat" -> "bonus"}
+        """
+
+
+        ''' 
+        3 - stojici kape
+        6 - stojici mec
+        0 - comp
+        '''
+        self.items["sword"] = []
+        self.items["sword"].append(self.game_view.player_sprite.all_textures[6][0][0])
+        self.items["sword"].append([4, 1])
+
+        self.items["comp"] = []
+        self.items["comp"].append(self.game_view.player_sprite.all_textures[0][0][0])
+        self.items["comp"].append([4, 2])
+
+        self.items["wall"] = []
+        self.items["wall"]
+
+    def setup(self):
+        self.clear()
+
+    def on_show(self):
+        self.clear()
+        arcade.set_background_color(arcade.csscolor.GHOST_WHITE)
+
+    def on_draw(self):
+        """
+        Render the screen.
+        """
+        # We should always start by clearing the window pixels
+        self.clear()
+
+        # Batch draw the grid sprites
+        self.grid_sprite_list.draw()
+
+        for i in ["sword", "comp"]:
+            x = self.items[i][1][0]
+            y = self.items[i][1][1]
+            self.grid_sprites[x][y].texture = self.items[i][0]
+
+        if self.thisColumn != self.lastColumn and self.thisRow != self.lastRow:
+            arcade.draw_text("UPGRADE SHOP",
+                             50 + self.pX,50 + self.pY,
+                             arcade.color.BLACK, 12,
+                             anchor_x = "center")
+
+    def on_key_press(self, symbol: int, modifiers: int):
+
+        if symbol == arcade.key.ESCAPE:
+            self.window.show_view(self.game_view)
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        """
+        Called when the user presses a mouse button.
+        """
+
+        # Convert the clicked mouse position into grid coordinates
+        column = int((x - 150) // (self.WIDTH + self.MARGIN))
+        row = int((y - 60) // (self.HEIGHT + self.MARGIN))
+
+        print(f"Click coordinates: ({x}, {y}). Grid coordinates: ({row}, {column})")
+
+        # Make sure we are on-grid. It is possible to click in the upper right
+        # corner in the margin and go to a grid location that doesn't exist
+        if row >= self.ROW_COUNT or column >= self.COLUMN_COUNT:
+            # Simply return from this method since nothing needs updating
+            return
+        if row < 0 or column < 0:
+            return
+        # Flip the color of the sprite
+        if row == 1 or column == 0 : return
+        if self.grid_sprites[row][column].color == arcade.color.WHITE:
+            self.grid_sprites[self.lastRow][self.lastColumn].color = arcade.color.WHITE
+            self.grid_sprites[row][column].color = arcade.color.GREEN
+            self.lastRow = row
+            self.lastColumn = column
+        else:
+            self.grid_sprites[row][column].color = arcade.color.WHITE
 
 
 def main():
