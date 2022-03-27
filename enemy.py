@@ -33,6 +33,8 @@ class Enemy(arcade.Sprite):
         self.texture = self.colour[0]
         self.cur_texture = 0
         self.phys = None
+        self.enemies_engine_walls = None
+        self.enemies_engine_trees = None
         self.points = None
 
         x = self.width * 0.69 / self.scale
