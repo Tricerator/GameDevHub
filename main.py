@@ -64,10 +64,13 @@ class GameView(arcade.View):
         self.down_pressed = False
         self.c_pressed = False
         self.b_pressed = False
+        self.k_pressed = False
+        self.l_pressed = False
 
         self.music = None
 
         self.sounds = {}
+        self.user_volume = 0.8
 
         # Don't show the mouse cursor
         self.window.set_mouse_visible(False)
@@ -215,6 +218,7 @@ class GameView(arcade.View):
             enemy_sprite.timer_rand = 0
             enemy_sprite.timer_smart = 0
             enemy_sprite.position = [random.randint(0, SCREEN_WIDTH), random.randint(0, SCREEN_HEIGHT)]
+
             if self.player_sprite.center_x > enemy_sprite.center_x:
                 enemy_sprite.change_x = random.randint(1, 3)
             else:
@@ -223,6 +227,9 @@ class GameView(arcade.View):
                 enemy_sprite.change_y = random.randint(1, 3)
             else:
                 enemy_sprite.change_y -= random.randint(1, 3)
+
+
+            enemy_sprite.phys = arcade.PhysicsEngineSimple(enemy_sprite, self.scene.get_sprite_list("Enemies"))
 
             self.scene.add_sprite("Enemies", enemy_sprite)
 
@@ -257,6 +264,11 @@ class GameView(arcade.View):
         elif key == arcade.key.C:
             self.c_pressed = True
 
+        if key == arcade.key.K:
+            self.k_pressed = True
+        elif key == arcade.key.L:
+            self.l_pressed = True
+
         elif key == arcade.key.B:
             self.b_pressed = not self.b_pressed
             if self.b_pressed:
@@ -264,24 +276,20 @@ class GameView(arcade.View):
             else:
                 self.buildingSquare_sprite.remove_from_sprite_lists()
 
-        if key == arcade.key.P:
-            self.c_pressed = False
-            self.b_pressed = False
-            self.up_pressed = False
-            self.down_pressed = False
-            self.left_pressed = False
-            self.right_pressed = False
-
-            pause_view = PauseView(self, SCREEN_WIDTH, SCREEN_HEIGHT, self.player_sprite.center_x,
-                                   self.player_sprite.center_y)
-            # pause_view.setup()
-            self.window.show_view(pause_view)
-
         if self.b_pressed:
             if key == arcade.key.KEY_2:
                 self.buildThorns = True
             if key == arcade.key.KEY_1:
                 self.buildThorns = False
+
+        if self.k_pressed:
+            if self.user_volume > 0.2:
+                self.user_volume -= 0.1
+            self.k_pressed = False
+        elif self.l_pressed:
+            if self.user_volume < 1:
+                self.user_volume += 0.1
+            self.l_pressed = False
 
             # self.buildWall()
 
@@ -301,7 +309,7 @@ class GameView(arcade.View):
             self.player_sprite.stamina -= 1
 
     def attack(self):
-        self.sounds["swordAttack"].play()
+        self.sounds["swordAttack"].play(self.user_volume)
         self.player_sprite.is_attacking = True
 
         addVector = [0, 0]
@@ -340,7 +348,7 @@ class GameView(arcade.View):
 
                 # if hit:
                 s = self.sounds["hit"]
-                s.play()
+                s.play(self.user_volume)
                 enemy.life -= 1
                 if enemy.life <= 0:
                     self.player_sprite.coins += 10 * enemy.scale
@@ -348,7 +356,7 @@ class GameView(arcade.View):
                     enemy.kill()
                     if len(self.scene["Enemies"]) <= 0:
                         snd =  arcade.load_sound(":resources:sounds/upgrade1.wav")
-                        self.sounds["clearGround"].play()
+                        self.sounds["clearGround"].play(self.user_volume)
 
     def on_update(self, delta_time):
         """ Movement and game logic """
@@ -395,7 +403,7 @@ class GameView(arcade.View):
                         else:
                             choice = "thorns"
 
-                        self.sounds[choice].play()
+                        self.sounds[choice].play(self.user_volume)
                         c.kill()
                     c.lives -= 1
 
@@ -436,7 +444,7 @@ class GameView(arcade.View):
         if self.b_pressed:
             self.buildingSquare_sprite.center_x = self.on_screen_pointer_x
             self.buildingSquare_sprite.center_y = self.on_screen_pointer_y
-            # kod honza companion
+
         if self.c_pressed:
             self.c_pressed = False
             if self.player_sprite.coins >= 100:
@@ -474,8 +482,8 @@ class GameView(arcade.View):
 
         for e in self.scene["Enemies"]:
             e.update_animation()
+            e.phys.update()
 
-        # kod honza companion
         self.player_sprite.update()
         self.player_sprite.update_animation()
 
@@ -502,6 +510,16 @@ class GameView(arcade.View):
             arcade.csscolor.BLACK,
             18,
         )
+        arcade.draw_text(
+            "vol "+str(int(self.user_volume * 100))+"%",
+            690,
+            575,
+            arcade.csscolor.BLACK,
+            18,
+        )
+
+        for e in self.scene["Enemies"]:
+            e.draw_hit_box()
 
 
 class GameOverView(arcade.View):
@@ -528,63 +546,6 @@ class GameOverView(arcade.View):
         game_view = GameView()
         game_view.setup()
         self.window.show_view(game_view)
-
-
-class PauseView(arcade.View):
-    def __init__(self, game_view, WIDTH, HEIGHT, px, py):
-        super().__init__()
-        self.game_view = game_view
-        self.width = WIDTH
-        self.height = HEIGHT
-        self.px = px
-        self.py = py
-
-    def on_show(self):
-        arcade.set_background_color(arcade.color.ORANGE)
-
-    def on_draw(self):
-        self.clear()
-
-        # Draw player, for effect, on pause screen.
-        # The previous View (GameView) was passed in
-        # and saved in self.game_view.
-   #     player_sprite = self.game_view.player_sprite
-   #     player_sprite.draw()
-
-        # draw an orange filter over him
-    #    arcade.draw_lrtb_rectangle_filled(left=player_sprite.left,
-      #                                    right=player_sprite.right,
-      #                                    top=player_sprite.top,
-      #                                    bottom=player_sprite.bottom,
-      #                                    color=arcade.color.ORANGE + (200,))
-
-        arcade.set_background_color(arcade.color.ORANGE)
-        arcade.draw_text("PAUSED", self.px, self.py + 50,
-                         arcade.color.BLACK, font_size=50, anchor_x="center")
-
-        # Show tip to return or reset
-        arcade.draw_text("Press Enter to return",
-                         self.px,
-                         self.py,
-                         arcade.color.BLACK,
-                         font_size=20,
-                         anchor_x="center")
-        arcade.draw_text("Press Esc to reset",
-                         self.px,
-                         self.py - 30,
-                         arcade.color.BLACK,
-                         font_size=20,
-                         anchor_x="center")
-
-    def on_key_press(self, key, _modifiers):
-        if key == arcade.key.ENTER:  # resume game
-            self.window.show_view(self.game_view)
-        elif key == arcade.key.ESCAPE:  # reset game
-
-            game_view = GameView()
-            game_view.setup()
-            self.window.show_view(game_view)
-
 
 
 def main():
